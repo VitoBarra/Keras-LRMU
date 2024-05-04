@@ -4,22 +4,22 @@ from numpy import linalg as la
 import tensorflow as tf
 import random
 from matplotlib import cm
-from matplotlib.colors import LightSource
 
 
 # https://danielrapp.github.io/rnn-spectral-radius/
 def positive_matrix_normalized_gaussian(size):
-    variance = 0.1 / np.sqrt(size)
-    mean = 10.0
+
+    mean = 0
     randomMatrix = tf.random.normal(
         shape=[size, size],
         mean=mean,
-        stddev=3.0,
+        stddev=1.0/ np.sqrt(size),
         dtype=tf.dtypes.float64,
         seed=123456,
         name=None
     )
-    return randomMatrix * variance / mean
+
+    return tf.math.abs(randomMatrix)/16
 
 
 def positive_matrix_uniform(size):
@@ -106,4 +106,4 @@ def test_gaussian_matrix_plot(filename, generate_random_matrix_fun=positive_matr
 
 if __name__ == "__main__":
     test_gaussian_matrix_plot("gaussian", positive_matrix_normalized_gaussian)
-    test_gaussian_matrix_plot("uniform", positive_matrix_uniform)
+    #test_gaussian_matrix_plot("uniform", positive_matrix_uniform)
