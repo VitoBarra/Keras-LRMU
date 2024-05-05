@@ -1,9 +1,17 @@
 import matplotlib.pyplot as plt
-import numpy as np
-from numpy import linalg as la
-import tensorflow as tf
-import random
 from matplotlib import cm
+from Main.ECS_Utility import *
+
+
+
+
+def gelfands_kth_term(matrix, k=20):
+    """Gelfand's formula"""
+    matrix = la.matrix_power(matrix, k)
+    f_norm = la.norm(matrix, 'fro')
+    term = f_norm ** (1.0 / k)
+
+    return term
 
 
 # https://danielrapp.github.io/rnn-spectral-radius/
@@ -41,13 +49,6 @@ def random_switch_signs(matrix, rate=0.5):
 
 
 # https://scicomp.stackexchange.com/questions/34117/implementing-gelfand-s-formula-for-the-spectral-radius-in-python-lack-of-conve
-def gelfands_kth_term(matrix, k=20):
-    """Gelfand's formula"""
-    matrix = la.matrix_power(matrix, k)
-    f_norm = la.norm(matrix, 'fro')
-    term = f_norm ** (1.0 / k)
-
-    return term
 
 
 def convergence_data_gelfands_formula(matrix, step=50):
