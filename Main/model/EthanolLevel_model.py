@@ -1,13 +1,16 @@
 import keras as ks
 import matplotlib.pyplot as plt
+import numpy as np
+
 from Main.Util.ArffFormatUtill import *
 import Main.Layer.keras_lmu as kslu
 import Main.Util.PlotUtil as pu
-from Main.Util.Util import TrainAndTestModel
+from Main.Util.ModelUtil import *
+from Main.Util.DataUtil import *
 
 
-def model():
-    sequence_length = 1751
+def ModelLMU():
+    sequence_length = 500
     numberOfClass = 4
     inputs = ks.Input(shape=(sequence_length, 1), name="ET_Input")
     feature = kslu.LMU(5, return_sequences=True,
@@ -27,18 +30,57 @@ def model():
     return model
 
 
+def ModelLSTM():
+    sequence_length = 500
+    classNumber = 4
+    inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input")
+    feature = ks.layers.LSTM(250, return_sequences=True)(inputs)
+    feature = ks.layers.LSTM(250, return_sequences=True)(feature)
+    feature = ks.layers.LSTM(250, return_sequences=True)(feature)
+    feature = ks.layers.LSTM(250, return_sequences=True)(feature)
+    feature = ks.layers.LSTM(250, return_sequences=True)(feature)
+    feature = ks.layers.LSTM(250, return_sequences=False)(feature)
+    outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
+    model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
+    model.summary()
+    model.compile(optimizer="adam",
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"])
+    return model
+
+
+def ModelFFBaseline():
+    sequence_length = 500
+    classNumber = 4
+    inputs = ks.Input(shape=(sequence_length,), name="ECG5000_Input")
+    feature = ks.layers.Dense(1000)(inputs)
+    feature = ks.layers.Dense(1000)(feature)
+    feature = ks.layers.Dense(1000)(feature)
+    feature = ks.layers.Dense(1000)(feature)
+    feature = ks.layers.Dense(1000)(feature)
+    feature = ks.layers.Dense(1000)(feature)
+    outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
+
+    model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
+    model.summary()
+    model.compile(optimizer="adam",
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"])
+    return model
+
+
 if __name__ == '__main__':
     path = "../../DataSets/EthanolLevel/"
-    train_Data, train_Label = ReadFromCSVToKeras(path + "EthanolLevel_TRAIN.csv")
-    test_Data, test_Label = ReadFromCSVToKeras(path + "EthanolLevel_TEST.csv")
-    train_Label -= 1
-    test_Label -= 1
+    samplingRate = 3
 
-    Validation_Data, Validation_Label = train_Data[450:], train_Label[450:]
-    train_Data, train_Label = train_Data[:450], train_Label[:450]
+    rawData, rawLabel = ReadFromCSVToKeras(path + "EthanolLevel_ALL.csv")
 
-    history, result = TrainAndTestModel(model, train_Data, train_Label,
-                                        Validation_Data, Validation_Label,
-                                        test_Data, test_Label,
-                                        32, 15)
+    Data = CropTimeSeries(rawData, 250)
+    Data = TimeSeriesSampleRate(Data, samplingRate)
+    Data = Data / Data.mean()
+
+    Label = rawLabel - 1
+    training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
+
+    history, result = TrainAndTestModel_OBJ(ModelLMU, training, validation, test, 32, 50)
     pu.PlotModel(history, result)
