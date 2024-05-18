@@ -4,7 +4,24 @@ import Main.Layer.keras_lmu as kslu
 import Main.Util.PlotUtil as pu
 from Main.Util.ModelUtil import *
 from Main.Util.DataUtil import *
+import Main.Layer.LRMU.layer as lrmu
+import os
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+def ModelFFBaseline():
+    sequence_length = 140
+    classNumber = 5
+    inputs = ks.Input(shape=(sequence_length,), name="ECG5000_Input")
+    feature = ks.layers.Dense(200)(inputs)
+    feature = ks.layers.Dense(200)(feature)
+    outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
+    model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
+    model.summary()
+    model.compile(optimizer="adam",
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"])
+    return model
 
 def ModelLSTM():
     sequence_length = 140
@@ -24,11 +41,11 @@ def ModelLSTM():
 def ModelLMU():
     sequence_length = 140
     classNumber = 5
-    inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input")
-    feature = kslu.LMU(2, return_sequences=True, trainable_theta=True,
-                       theta=140, order=128, hidden_cell=ks.layers.LSTMCell(50))(inputs)
-    feature = kslu.LMU(2, return_sequences=False, trainable_theta=True,
-                       theta=140, order=128, hidden_cell=ks.layers.LSTMCell(50))(feature)
+    inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input_LMU")
+    feature = kslu.LMU(
+           10, theta=140, order=32,  memory_to_memory=True, hidden_to_memory=True,
+        use_bias=True,   trainable_theta=False,
+        hidden_cell=ks.layers.LSTMCell(50))(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
     model.summary()
@@ -38,12 +55,15 @@ def ModelLMU():
     return model
 
 
-def ModelFFBaseline():
+def ModelLRMU():
     sequence_length = 140
     classNumber = 5
-    inputs = ks.Input(shape=(sequence_length,), name="ECG5000_Input")
-    feature = ks.layers.Dense(200)(inputs)
-    feature = ks.layers.Dense(200)(feature)
+    inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input_LRMU")
+    feature = ks.layers.RNN(
+        lrmu.LRMUCell(
+            10, theta=140, order=32, memoryToMemory=True,
+            hiddenToMemory=True, useBias=True,
+            hiddenCell=ks.layers.LSTMCell(50)))(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
     model.summary()
@@ -51,6 +71,8 @@ def ModelFFBaseline():
                   loss="sparse_categorical_crossentropy",
                   metrics=["accuracy"])
     return model
+
+
 
 
 if __name__ == '__main__':
@@ -59,5 +81,11 @@ if __name__ == '__main__':
     Label -= 1
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
-    history, result = TrainAndTestModel_OBJ(ModelFFBaseline, training, validation, test, 128, 15)
-    pu.PlotModel(history, result)
+    history, result = TrainAndTestModel_OBJ(
+        ModelLRMU
+        #ModelLMU
+        ,training, validation, test, 128, 15)
+
+    pu.PlotModel(history)
+    pu.PrintAccuracy(result)
+

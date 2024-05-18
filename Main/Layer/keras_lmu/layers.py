@@ -31,9 +31,7 @@ else:
 
 
 @tf.keras.utils.register_keras_serializable("keras-lmu")
-class LMUCell(
-    DropoutRNNCellMixin, BaseRandomLayer
-):  # pylint: disable=too-many-ancestors
+class LMUCell(DropoutRNNCellMixin, BaseRandomLayer):  # pylint: disable=too-many-ancestors
     """
     Implementation of LMU cell (to be used within Keras RNN wrapper).
 
