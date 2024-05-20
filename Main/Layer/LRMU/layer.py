@@ -129,7 +129,7 @@ class LRMUCell(keras.layers.Layer):
         # Compute the new Hidden State
 
         hidden_input = (
-            new_memory_state if not self.InputToHiddenCell else tf.concat((new_memory_state, inputs), axis=0))
+            new_memory_state if not self.InputToHiddenCell else tf.concat((new_memory_state, inputs), axis=1))
 
         if self.HiddenCell is None:
             output = hidden_input
@@ -160,6 +160,24 @@ class LRMUCell(keras.layers.Layer):
         self.A, self.B = M._cont2discrete_zoh(
             self._base_A / self._init_theta, self._base_B / self._init_theta
         )
+
+    def get_config(self):
+        config = super().get_config()
+        config.update(
+            {
+                "memory_d": self.MemoryDim,
+                "order": self.Order,
+                "theta": self._init_theta,
+                "hidden_cell": keras.layers.serialize(self.HiddenCell),
+                "hidden_to_memory": self.HiddenToMemory,
+                "memory_to_memory": self.MemoryToMemory,
+                "input_to_hidden": self.InputToHiddenCell,
+                "use_bias": self.UseBias,
+                "seed": self.Seed,
+            }
+        )
+
+        return config
 
 
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
@@ -198,3 +216,24 @@ class LRMU(keras.layers.Layer):
 
     def call(self, inputs, training=False):
         return self.layer.call(inputs, training=training)
+
+    def get_config(self):
+        """Return config of layer (for serialization during model saving/loading)."""
+
+        config = super().get_config()
+        config.update(
+            {
+                "memory_d": self.MemoryDim,
+                "order": self.Order,
+                "theta": self._init_theta,
+                "hidden_cell": keras.layers.serialize(self.HiddenCell),
+                "hidden_to_memory": self.HiddenToMemory,
+                "memory_to_memory": self.MemoryToMemory,
+                "input_to_hidden": self.InputToHiddenCell,
+                "use_bias": self.UseBias,
+                "return_sequences": self.ReturnSequence,
+                "seed": self.Seed
+            }
+        )
+
+        return config

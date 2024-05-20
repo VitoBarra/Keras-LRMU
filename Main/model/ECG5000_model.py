@@ -1,4 +1,6 @@
 import keras as ks
+import keras_tuner
+
 from Main.Util.ArffFormatUtill import *
 import Main.Layer.keras_lmu as kslu
 import Main.Util.PlotUtil as pu
@@ -8,7 +10,7 @@ import Main.Layer.LRMU.layer as lrmu
 from Main.Layer.ESN.layer import *
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 
 
 def ModelFFBaseline():
@@ -58,15 +60,15 @@ def ModelLMU():
     return model
 
 
-def ModelLRMU():
+def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
+              memoryToMemory, hiddenToMemory, inputToCell, useBias):
     sequence_length = 140
     classNumber = 5
     inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input_LRMU")
-    feature = lrmu.LRMU(
-        memoryDimension=10, theta=140, order=32, hiddenUnit=250, spectraRadius=1.01,
-        memoryToMemory=True, hiddenToMemory=True, useBias=True,
-        reservoirMode=True, seed=159, returnSequences=False,
-        hiddenCell=ks.layers.LSTMCell(50))(inputs)
+    feature = lrmu.LRMU(memoryDimension=memoryDim, order=order, theta=sequence_length, hiddenUnit=hiddenUnit,
+                        spectraRadius=spectraRadius, reservoirMode=reservoirMode, hiddenCell=hiddenCell,
+                        memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToCell=inputToCell,
+                        useBias=useBias)(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
     model.summary()
@@ -76,13 +78,55 @@ def ModelLRMU():
     return model
 
 
+def ModelLRMUWhitTuning(hp):
+    memoryDim = hp.Int("memoryDim", min_value=10, max_value=100, step=5)
+    order = hp.Int("order", min_value=32, max_value=512, step=32)
+    hiddenUnit = hp.Int("hiddenUnit", min_value=50, max_value=1500, step=50)
+    spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.25, step=0.05)
+    reservoirMode = hp.Boolean("reservoirMode")
+    hiddenCell = None
+    memoryToMemory = hp.Boolean("memoryToMemory")
+    hiddenToMemory = hp.Boolean("hiddenToMemory")
+    inputToCell = hp.Boolean("inputToCell")
+    useBias = hp.Boolean("useBias")
+    return ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
+                         memoryToMemory, hiddenToMemory, inputToCell, useBias)
+
+    #return ModelLRMU(15, 64, 1050, 0.8, True, None, True, False, True, False)
+
+
 if __name__ == '__main__':
+    print(tf.config.list_physical_devices())
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     path = "../../DataSets/ECG5000/"
     Data, Label = ReadFromCSVToKeras(path + "ECG5000_ALL.csv")
     Label -= 1
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
-    history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)
+    tuner = keras_tuner.RandomSearch(
+        ModelLRMUWhitTuning,
+        max_trials=30,
+        executions_per_trial=1,
+        # Do not resume the previous search in the same directory.
+        overwrite=True,
+        objective="val_accuracy",
+        # Set a directory to store the intermediate results.
+        directory="/tmp/tb",
 
-    pu.PlotModel(history)
-    pu.PrintAccuracy(result)
+    )
+
+    tuner.search(
+        training.Data,
+        training.Label,
+        validation_data=(validation.Data, validation.Label),
+        epochs=2,
+
+        # Use the TensorBoard callback.
+        # The logs will be write to "/tmp/tb_logs".
+        callbacks=[keras.callbacks.TensorBoard("/tmp/tb_logs")],
+    )
+
+    # history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)
+
+    # pu.PlotModel(history)
+    # pu.PrintAccuracy(result)
