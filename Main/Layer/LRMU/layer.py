@@ -5,6 +5,9 @@ import numpy as np
 import tensorflow as tf
 from packaging import version
 from Main.Util import MathUtility as M
+from Main.Layer.ESN.layer import *
+from Main.Layer.ESN.InizializationUtility import *
+import math
 
 tf_version = version.parse(tf.__version__)
 if tf_version < version.parse("2.8.0rc0"):
@@ -19,33 +22,40 @@ else:
 
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMUCell(keras.layers.Layer):
-    def __init__(self, memory_d, order, theta, hiddenCell=None, memoryToMemory=False, hiddenToMemory=False,
-                 inputToCell=False, useBias=False, **kwargs):
+    def __init__(self, memoryDimension, order, theta, hiddenUnit=0, spectraRadius=0.99,
+                 reservoirMode=True, hiddenCell=None, memoryToMemory=False, hiddenToMemory=False,
+                 inputToCell=False, useBias=False, seed=0, **kwargs):
         super().__init__()
-        self.MemoryDim = memory_d
+        self.MemoryDim = memoryDimension
         self.Order = order
         self._init_theta = theta
+        self.SpectraRadius = spectraRadius
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
         self.InputToHiddenCell = inputToCell
         self.UseBias = useBias
+        self.HiddenCell = hiddenCell
+        self.ReservoirMode = reservoirMode
+        self.Seed = seed
 
         self.MemoryEncoder = None
         self.HiddenEncoder = None
         self.InputEncoder = None
-        self.HiddenCell = hiddenCell
+        self.HiddenUnit = hiddenUnit
 
         self.Bias = None
 
         self.A = None
         self.B = None
 
+        if self.HiddenCell is None and self.HiddenUnit != 0:
+            self.HiddenCell = ReservoirCell(self.HiddenUnit, spectral_radius=self.SpectraRadius)
+
         if self.HiddenCell is None:
             if self.HiddenToMemory:
                 raise ValueError(
                     "hidden_to_memory must be False if hidden_cell is None"
                 )
-
             self.HiddenOutputSize = self.MemoryDim * self.Order
             self.HiddenStateSize = []
         elif hasattr(self.HiddenCell, "state_size"):
@@ -59,45 +69,39 @@ class LRMUCell(keras.layers.Layer):
         self.state_size = [self.MemoryDim * self.Order] + tf.nest.flatten(self.HiddenStateSize)
         self.output_size = self.HiddenOutputSize
 
+    def createWeight(self, shape, inizializer="glorot_uniform"):
+        if self.ReservoirMode:
+            value = 1
+            if len(shape) > 1:
+                value = math.sqrt(6 / (shape[0] + shape[1]))
+            return tf.random.uniform(shape=shape, minval=-value, maxval=value)
+        else:
+            return self.add_weight(shape=shape, initializer=inizializer)
+
     def build(self, input_shape):
+        tf.random.set_seed(self.Seed)
         super().build(input_shape)
 
         inputDim = input_shape[-1]
-        self.InputEncoder = self.add_weight(
-            shape=(inputDim, self.MemoryDim),
-            initializer="glorot_uniform",
-            name="InputEncoder",
-        )
+        self.InputEncoder = self.createWeight(shape=(inputDim, self.MemoryDim))
 
         if self.MemoryToMemory:
-            self.MemoryEncoder = self.add_weight(
-                shape=(self.Order * self.MemoryDim, self.MemoryDim),
-                initializer="glorot_uniform",
-                name="MemoryEncoder",
-            )
+            self.MemoryEncoder = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim))
 
         OutDim = self.HiddenOutputSize
 
         if self.HiddenToMemory:
-            self.HiddenEncoder = self.add_weight(
-                shape=(OutDim, self.MemoryDim),
-                initializer="glorot_uniform",
-                name="HiddenEncoder",
-            )
+            self.HiddenEncoder = self.createWeight(shape=(OutDim, self.MemoryDim))
 
         if self.UseBias:
-            self.Bias = self.add_weight(
-                shape=(self.MemoryDim,),
-                initializer="zeros",
-                name="Bias",
-            )
+            self.Bias = self.createWeight(shape=(self.MemoryDim,))
 
         if self.HiddenCell is not None and not self.HiddenCell.built:
             hidden_input_d = self.MemoryDim * self.Order
             if self.InputToHiddenCell:
                 hidden_input_d += input_shape[-1]
             with tf.name_scope(self.HiddenCell.name):
-                self.HiddenCell.build((input_shape[0], hidden_input_d) , )
+                self.HiddenCell.build((input_shape[0], hidden_input_d), )
 
         self._gen_AB()
 
@@ -156,3 +160,41 @@ class LRMUCell(keras.layers.Layer):
         self.A, self.B = M._cont2discrete_zoh(
             self._base_A / self._init_theta, self._base_B / self._init_theta
         )
+
+
+@tf.keras.utils.register_keras_serializable("keras-lrmu")
+class LRMU(keras.layers.Layer):
+
+    def __init__(self, memoryDimension, order, theta, hiddenUnit=0, spectraRadius=0.99,
+                 reservoirMode=True, hiddenCell=None, memoryToMemory=False, hiddenToMemory=False,
+                 inputToCell=False, useBias=False, seed=0, returnSequences = False, **kwargs):
+        super().__init__()
+        self.MemoryDim = memoryDimension
+        self.Order = order
+        self._init_theta = theta
+        self.HiddenUnit = hiddenUnit
+        self.SpectraRadius = spectraRadius
+        self.MemoryToMemory = memoryToMemory
+        self.HiddenToMemory = hiddenToMemory
+        self.InputToHiddenCell = inputToCell
+        self.UseBias = useBias
+        self.HiddenCell = hiddenCell
+        self.ReservoirMode = reservoirMode
+        self.Seed = seed
+        self.ReturnSequence = returnSequences
+
+        self.layer = None
+
+    def build(self, input_shape):
+        super().build(input_shape)
+
+        self.layer = keras.layers.RNN(
+            LRMUCell(self.MemoryDim, self.Order, self._init_theta, self.HiddenUnit, self.SpectraRadius,
+                     self.ReservoirMode, self.HiddenCell,
+                     self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell,
+                     self.UseBias, self.Seed), return_sequences=self.ReturnSequence)
+
+        self.layer.build(input_shape)
+
+    def call(self, inputs, training=False):
+        return self.layer.call(inputs, training=training)

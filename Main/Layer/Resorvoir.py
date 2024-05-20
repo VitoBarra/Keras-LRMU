@@ -6,9 +6,9 @@ from tensorflow import keras
 
 from sklearn.linear_model import RidgeClassifier, RidgeClassifierCV
 
-from legendre import *
-
-from tqdm import tqdm
+# from legendre import *
+#
+# from tqdm import tqdm
 
 # import StandardScaler
 
@@ -205,164 +205,55 @@ class ResESN(keras.Model):
         return self.readout.score(x_train_states, y)
 
 
-class ReservoirCell(keras.layers.Layer):
 
-    # builds a reservoir as a hidden dynamical layer for a recurrent neural network
-
-    def __init__(self, units,
-
-                 input_scaling=1.0, bias_scaling=1.0,
-
-                 spectral_radius=0.99,
-
-                 leaky=1, activation=tf.nn.tanh,
-
-                 **kwargs):
-
-        self.units = units
-
-        self.state_size = units
-
-        self.input_scaling = input_scaling
-
-        self.bias_scaling = bias_scaling
-
-        self.spectral_radius = spectral_radius
-
-        self.leaky = leaky  # leaking rate
-
-        self.activation = activation
-
-        super().__init__(**kwargs)
-
-    def build(self, input_shape):
-
-        # build the recurrent weight matrix
-
-        # uses circular law to determine the values of the recurrent weight matrix
-
-        # rif. paper
-
-        # Gallicchio, Claudio, Alessio Micheli, and Luca Pedrelli.
-
-        # "Fast spectral radius initialization for recurrent neural networks."
-
-        # INNS Big Data and Deep Learning conference. Springer, Cham, 2019.
-
-        value = (self.spectral_radius / np.sqrt(self.units)) * (6 / np.sqrt(12))
-
-        W = tf.random.uniform(shape=(self.units, self.units), minval=-value, maxval=value)
-
-        self.recurrent_kernel = W
-
-        # build the input weight matrix
-
-        self.kernel = tf.random.uniform(shape=(input_shape[-1], self.units), minval=-self.input_scaling,
-                                        maxval=self.input_scaling)
-
-        # initialize the bias
-
-        self.bias = tf.random.uniform(shape=(self.units,), minval=-self.bias_scaling, maxval=self.bias_scaling)
-
-        self.built = True
-
-    def call(self, inputs, states):
-
-        prev_output = states[0]
-
-        input_part = tf.matmul(inputs, self.kernel)
-
-        state_part = tf.matmul(prev_output, self.recurrent_kernel)
-
-        if self.activation != None:
-
-            output = prev_output * (1 - self.leaky) + self.activation(input_part + self.bias + state_part) * self.leaky
-
-        else:
-
-            output = prev_output * (1 - self.leaky) + (input_part + self.bias + state_part) * self.leaky
-
-        return output, [output]
 
 
 class ESN(keras.Model):
 
     # Implements an Echo State Network model for time-series classification problems
-
     #
-
     # The architecture comprises a recurrent layer with ReservoirCell,
-
     # followed by a trainable dense readout layer for classification
-
     def __init__(self, units,
-
-                 input_scaling=1., bias_scaling=1.0, spectral_radius=0.9,
-
+                input_scaling=1., bias_scaling=1.0, spectral_radius=0.9,
                  leaky=1,
-
                  readout_regularizer=1.0,
-
                  activation=tf.nn.tanh,
-
                  features_dim=1,
-
                  batch_size=None,
-
                  **kwargs):
 
         super().__init__(**kwargs)
-
         if batch_size is not None:
-
             self.reservoir = keras.Sequential([
 
                 keras.Input(batch_input_shape=(batch_size, None, features_dim)),
 
                 keras.layers.RNN(cell=ReservoirCell(units=units,
-
                                                     input_scaling=input_scaling,
-
                                                     bias_scaling=bias_scaling,
-
                                                     spectral_radius=spectral_radius,
-
                                                     leaky=leaky, activation=activation),
-
-                                 stateful=True)
-
+                                                    stateful=True)
             ])
 
         else:
 
             self.reservoir = keras.Sequential([
-
                 keras.layers.RNN(cell=ReservoirCell(units=units,
-
                                                     input_scaling=input_scaling,
-
                                                     bias_scaling=bias_scaling,
-
                                                     spectral_radius=spectral_radius,
-
-                                                    leaky=leaky, activation=activation))
-
-            ])
+                                                    leaky=leaky, activation=activation))])
 
         self.readout = RidgeClassifier(alpha=readout_regularizer, solver='svd')
-
         self.units = units
-
         self.features_dim = features_dim
-
         self.batch_size = batch_size
 
     def compute_output(self, inputs):
-
         # calculate the reservoir states and the corresponding output of the model
-
         reservoir_states = self.reservoir(inputs)
-
         output = self.readout.predict(reservoir_states)
 
         return output
@@ -372,51 +263,35 @@ class ESN(keras.Model):
         # create a numpy version of the input, which has an explicit first dimension given by num_samples
 
         reservoir_states = self.reservoir(inputs)
-
         output = self.readout.predict(reservoir_states)
-
         return output
 
     def fit(self, x, y, **kwargs):
-
         # For all the RC methods, we avoid doing the same reservoir operations at each epoch
-
         # To this aim, we pre-compute all the states and then we invoke the readout fit method
 
         x_train_states = self.reservoir(x)
-
         self.readout.fit(x_train_states, y)
 
     def evaluate(self, x, y):
-
         x_train_states = self.reservoir(x)
-
         return self.readout.score(x_train_states, y)
 
     def evaluate_batch(self, x, y):
 
         # memory_reservoir_states = self.memory(x)
-
         # concatenated_input = np.concatenate((memory_reservoir_states,x), axis = -1)
-
         # perform the state computation in the reservoir in batches, to avoid memory issues
-
-        # use a bacth size of of batch_size for the reservoir computation
+        # use a bacth size of batch_size for the reservoir computation
 
         batch_size = self.batch_size
-
         num_batches = int(np.ceil(x.shape[0] / batch_size))
-
         states_all = np.zeros(shape=(x.shape[0], self.units))
 
         for i in range(num_batches):
-
             xlocal = x[i * batch_size:(i + 1) * batch_size, :, :]
-
             self.reservoir.reset_states()
-
             original_shape = xlocal.shape
-
             if xlocal.shape[0] < batch_size:
                 xlocal = np.concatenate(
                     (xlocal, np.zeros((batch_size - xlocal.shape[0], xlocal.shape[1], xlocal.shape[2]))), axis=0)
@@ -433,27 +308,19 @@ class ESN(keras.Model):
     def compute_output_batch(self, inputs):
 
         # calculate the reservoir states and the corresponding output of the model
-
         # memory_reservoir_states = self.memory(inputs)
-
         # concatenated_input = np.concatenate((self.memory(inputs),inputs), axis = -1)
-
         # perform the state computation in the reservoir in batches, to avoid memory issues
-
-        # use a bacth size of of batch_size for the reservoir computation
+        # use a bacth size of batch_size for the reservoir computation
 
         batch_size = self.batch_size
-
         num_batches = int(np.ceil(inputs.shape[0] / batch_size))
-
         states_all = np.zeros(shape=(inputs.shape[0], self.units))
 
         for i in range(num_batches):
 
             self.reservoir.reset_states()
-
             xlocal = inputs[i * batch_size:(i + 1) * batch_size, :, :]
-
             original_shape = xlocal.shape
 
             if xlocal.shape[0] < batch_size:
@@ -464,9 +331,7 @@ class ESN(keras.Model):
                 x_states = self.reservoir(xlocal[:, t:t + 1, :])
 
             # memory_reservoir_states = self.memory(xlocal)
-
             # concatenated_input = np.concatenate((memory_reservoir_states,xlocal), axis = -1)
-
             # x_states = self.reservoir(xlocal)
 
             states_all[i * batch_size:(i + 1) * batch_size, :] = x_states[:original_shape[0], :]
@@ -478,31 +343,22 @@ class ESN(keras.Model):
     def fit_batch(self, x, y, **kwargs):
 
         # For all the RC methods, we avoid doing the same reservoir operations at each epoch
-
         # To this aim, we pre-compute all the states and then we invoke the readout fit method
-
         # perform the state computation in the reservoir in batches, to avoid memory issues
-
-        # use a bacth size of of batch_size for the reservoir computation
+        # use a bacth size of batch_size for the reservoir computation
 
         batch_size = self.batch_size
-
         num_batches = int(np.ceil(x.shape[0] / batch_size))
-
         x_train_states_all = np.zeros(shape=(x.shape[0], self.units))
 
         for i in range(num_batches):
 
             self.reservoir.reset_states()
-
             xlocal = x[i * batch_size:(i + 1) * batch_size, :, :]
-
             # memory_reservoir_states = self.memory(xlocal)
-
             # concatenated_input = np.concatenate((memory_reservoir_states,xlocal), axis = -1)
 
             original_shape = xlocal.shape
-
             if xlocal.shape[0] < batch_size:
                 xlocal = np.concatenate(
                     (xlocal, np.zeros((batch_size - xlocal.shape[0], xlocal.shape[1], xlocal.shape[2]))), axis=0)
