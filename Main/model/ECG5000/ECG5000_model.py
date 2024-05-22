@@ -83,7 +83,7 @@ def ModelLRMUWhitTuning(hp):
     order = hp.Int("order", min_value=32, max_value=512, step=32)
     hiddenUnit = hp.Int("hiddenUnit", min_value=50, max_value=1500, step=50)
     spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.25, step=0.05)
-    reservoirMode = hp.Boolean("reservoirMode")
+    reservoirMode = True
     hiddenCell = None
     memoryToMemory = hp.Boolean("memoryToMemory")
     hiddenToMemory = hp.Boolean("hiddenToMemory")
@@ -96,9 +96,9 @@ def ModelLRMUWhitTuning(hp):
 
 
 if __name__ == '__main__':
-    print(tf.config.list_physical_devices())
+    print(tf.config.list_physical_devices('GPU'))
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-    path = "../../DataSets/ECG5000/"
+    path = "./Data/"
     Data, Label = ReadFromCSVToKeras(path + "ECG5000_ALL.csv")
     Label -= 1
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         overwrite=True,
         objective="val_accuracy",
         # Set a directory to store the intermediate results.
-        directory="/tmp/tb",
+        directory="./tmp/tb",
 
     )
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
         # Use the TensorBoard callback.
         # The logs will be write to "/tmp/tb_logs".
-        callbacks=[keras.callbacks.TensorBoard("/tmp/tb_logs")],
+        callbacks=[keras.callbacks.TensorBoard("./tmp/tb_logs")],
     )
 
     # history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)

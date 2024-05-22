@@ -70,7 +70,7 @@ def ModelFFBaseline():
 
 
 if __name__ == '__main__':
-    path = "../../DataSets/EthanolLevel/"
+    path = "./Data/"
     samplingRate = 3
 
     rawData, rawLabel = ReadFromCSVToKeras(path + "EthanolLevel_ALL.csv")
