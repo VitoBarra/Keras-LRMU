@@ -1,5 +1,4 @@
 import os
-
 import matplotlib.pyplot as plt
 import keras_tuner
 import tensorflow as tf
@@ -9,7 +8,10 @@ import numpy.random as rng
 from Main.Util.ArffFormatUtill import ReadFromCSVToKeras
 from Main.Util.DataUtil import SplitDataset
 from Main.Layer.LRMU import layer as lrmu
+import Main.Util.PlotUtil as pu
 import tensorflow.keras as ks
+
+from Main.Util.ModelUtil import TrainAndTestModel_OBJ
 
 
 def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
@@ -22,7 +24,7 @@ def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hidden
                         memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToCell=inputToCell,
                         useBias=useBias)(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
-    model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
+    model = ks.Model(inputs=inputs, outputs=outputs, name="pmMNIST_LRMU_Model")
     model.summary()
     model.compile(optimizer="adam",
                   loss="sparse_categorical_crossentropy",
@@ -33,7 +35,7 @@ def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hidden
 def ModelLRMUWhitTuning(hp):
     memoryDim = hp.Int("memoryDim", min_value=10, max_value=100, step=5)
     order = hp.Int("order", min_value=32, max_value=512, step=32)
-    hiddenUnit = hp.Int("hiddenUnit", min_value=50, max_value=1000, step=50)
+    hiddenUnit = hp.Int("hiddenUnit", min_value=50, max_value=500, step=50)
     spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.25, step=0.05)
     reservoirMode = True
     hiddenCell = None
@@ -43,6 +45,12 @@ def ModelLRMUWhitTuning(hp):
     useBias = hp.Boolean("useBias")
     return ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
                      memoryToMemory, hiddenToMemory, inputToCell, useBias)
+
+
+def ModelLRMU_P():
+    return ModelLRMU(80,128,150,1.2,
+                     True,None,False,True,False,False)
+
 
 
 if __name__ == '__main__':
@@ -55,39 +63,34 @@ if __name__ == '__main__':
 
     Data = Data.reshape(Data.shape[0], -1, 1)
     perm = rng.permutation(Data.shape[1])
-    Data = Data[:, perm]
+    Data = Data[:1000, perm]
+    Label = Label[:1000]
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
-    plt.figure()
-    plt.imshow(Data[0].reshape(8, -1), cmap="gray")
-    plt.axis("off")
-    plt.title(f"Permuted sequence of the digit '{train_labels[0]}' (reshaped to 98 x 8)")
-    plt.show()
+    # tuner = keras_tuner.RandomSearch(
+    #     ModelLRMUWhitTuning,
+    #     max_trials=30,
+    #     executions_per_trial=1,
+    #     # Do not resume the previous search in the same directory.
+    #     overwrite=True,
+    #     objective="val_accuracy",
+    #     # Set a directory to store the intermediate results.
+    #     directory="./tmp/tb",
+    #
+    # )
+    #
+    # tuner.search(
+    #     training.Data,
+    #     training.Label,
+    #     validation_data=(validation.Data, validation.Label),
+    #     epochs=2,
+    #
+    #     # Use the TensorBoard callback.
+    #     # The logs will be write to "/tmp/tb_logs".
+    #     callbacks=[ks.callbacks.TensorBoard("./tmp/tb_logs")],
+    # )
 
-    tuner = keras_tuner.RandomSearch(
-        ModelLRMUWhitTuning,
-        max_trials=30,
-        executions_per_trial=1,
-        # Do not resume the previous search in the same directory.
-        overwrite=True,
-        objective="val_accuracy",
-        # Set a directory to store the intermediate results.
-        directory="./tmp/tb",
+    history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 15)
 
-    )
-
-    tuner.search(
-        training.Data,
-        training.Label,
-        validation_data=(validation.Data, validation.Label),
-        epochs=2,
-
-        # Use the TensorBoard callback.
-        # The logs will be write to "/tmp/tb_logs".
-        callbacks=[ks.callbacks.TensorBoard("./tmp/tb_logs")],
-    )
-
-    # history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)
-
-    # pu.PlotModel(history)
-    # pu.PrintAccuracy(result)
+    pu.PlotModel(history)
+    pu.PrintAccuracy(result)
