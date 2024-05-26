@@ -2,7 +2,6 @@
 import tensorflow as tf
 
 
-@staticmethod
 def _cont2discrete_zoh(A, B):
     """
     Function to discretize A and B matrices using Zero Order Hold method.

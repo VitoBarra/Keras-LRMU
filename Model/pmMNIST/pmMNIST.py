@@ -3,9 +3,9 @@ import tensorflow as tf
 import numpy as np
 import numpy.random as rng
 
-from Utility.DataUtil import SplitDataset
-import Utility.PlotUtil as pu
 from LRMU import layer as lrmu
+from Utility.DataUtil import SplitDataset
+from Utility.PlotUtil import *
 import tensorflow.keras as ks
 
 from Utility.ModelUtil import TrainAndTestModel_OBJ
@@ -50,9 +50,9 @@ def ModelLRMU_P():
 
 
 
-if __name__ == '__main__':
+def Run():
     print(tf.config.list_physical_devices('GPU'))
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     ((train_images, train_labels), (test_images, test_labels)) = ks.datasets.mnist.load_data()
 
     Data = np.concatenate((train_images, test_images), axis=0)
@@ -89,5 +89,5 @@ if __name__ == '__main__':
 
     history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 15)
 
-    pu.PlotModel(history)
-    pu.PrintAccuracy(result)
+    PlotModel(history)
+    PrintAccuracy(result)

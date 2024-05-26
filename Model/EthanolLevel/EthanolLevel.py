@@ -67,7 +67,7 @@ def ModelFFBaseline():
     return model
 
 
-if __name__ == '__main__':
+def Run():
     path = "Data/"
     samplingRate = 3
 

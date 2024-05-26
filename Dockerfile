@@ -1,10 +1,16 @@
+#
+#clone the tensorflow docker image
 FROM tensorflow/tensorflow:latest-gpu
-# ^or just latest-gpu if you don't need Jupyter
 
-WORKDIR /tf
 
+
+# set where python will look for modules
+ENV PYTHONPATH /tf
 # Set desired Python version
 ENV python_version 3.11
+
+# set the working directory in the container
+WORKDIR /tf
 
 # Install desired Python version (the current TF image is be based on Ubuntu at the moment)
 RUN apt install -y python${python_version}
@@ -18,3 +24,4 @@ RUN python -m pip install --upgrade pip setuptools wheel
 
 ADD . .
 RUN python -m pip install -r requirements.txt
+CMD ["python", "Main.py"]

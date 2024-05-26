@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from Main.ECS_Utility import *
 
 
 

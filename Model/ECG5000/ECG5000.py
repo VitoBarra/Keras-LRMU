@@ -1,3 +1,4 @@
+import tensorflow as tf
 import keras as ks
 import keras_tuner
 
@@ -92,7 +93,7 @@ def ModelLRMUWhitTuning(hp):
     #return ModelLRMU(15, 64, 1050, 0.8, True, None, True, False, True, False)
 
 
-if __name__ == '__main__':
+def Run():
     print(tf.config.list_physical_devices('GPU'))
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     path = "Data/"
@@ -120,7 +121,7 @@ if __name__ == '__main__':
 
         # Use the TensorBoard callback.
         # The logs will be write to "/tmp/tb_logs".
-        callbacks=[keras.callbacks.TensorBoard("./tmp/tb_logs")],
+        callbacks=[ks.callbacks.TensorBoard("./tmp/tb_logs")],
     )
 
     # history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)

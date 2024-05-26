@@ -1,3 +1,7 @@
 numpy
 matplotlib
+keras
+tensorflow
+packaging
+scipy
 keras_tuner
