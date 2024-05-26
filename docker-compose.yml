@@ -1,6 +1,8 @@
 services:
   lrmu:
     build: .
+    volumes:
+      - ./logs:/tf/logs
     deploy:
       resources:
         reservations:

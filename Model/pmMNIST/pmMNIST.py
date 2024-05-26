@@ -1,4 +1,6 @@
 import os
+
+import keras_tuner
 import tensorflow as tf
 import numpy as np
 import numpy.random as rng
@@ -6,6 +8,7 @@ import numpy.random as rng
 from LRMU import layer as lrmu
 from Utility.DataUtil import SplitDataset
 from Utility.PlotUtil import *
+from Utility.Debug import *
 import tensorflow.keras as ks
 
 from Utility.ModelUtil import TrainAndTestModel_OBJ
@@ -51,8 +54,10 @@ def ModelLRMU_P():
 
 
 def Run():
-    print(tf.config.list_physical_devices('GPU'))
+
+    PrintAvailableGPU()
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
     ((train_images, train_labels), (test_images, test_labels)) = ks.datasets.mnist.load_data()
 
     Data = np.concatenate((train_images, test_images), axis=0)
@@ -60,34 +65,33 @@ def Run():
 
     Data = Data.reshape(Data.shape[0], -1, 1)
     perm = rng.permutation(Data.shape[1])
-    Data = Data[:1000, perm]
-    Label = Label[:1000]
+    Data = Data[:30000, perm]
+    Label = Label[:30000]
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
-    # tuner = keras_tuner.RandomSearch(
-    #     ModelLRMUWhitTuning,
-    #     max_trials=30,
-    #     executions_per_trial=1,
-    #     # Do not resume the previous search in the same directory.
-    #     overwrite=True,
-    #     objective="val_accuracy",
-    #     # Set a directory to store the intermediate results.
-    #     directory="./tmp/tb",
-    #
-    # )
-    #
-    # tuner.search(
-    #     training.Data,
-    #     training.Label,
-    #     validation_data=(validation.Data, validation.Label),
-    #     epochs=2,
-    #
-    #     # Use the TensorBoard callback.
-    #     # The logs will be write to "/tmp/tb_logs".
-    #     callbacks=[ks.callbacks.TensorBoard("./tmp/tb_logs")],
-    # )
+    tuner = keras_tuner.RandomSearch(
+         ModelLRMUWhitTuning,
+         max_trials=100,
+        project_name="pmMNIST",
+        executions_per_trial=1,
+        # Do not resume the previous search in the same directory.
+        overwrite=True,
+        objective="val_accuracy",
+        # Set a directory to store the intermediate results.
+        directory="./logs/pmMNIST/tmp",
 
-    history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 15)
+    )
 
-    PlotModel(history)
-    PrintAccuracy(result)
+    tuner.search(
+        training.Data,
+        training.Label,
+        validation_data=(validation.Data, validation.Label),
+        epochs=2,
+        # Use the TensorBoard callback.
+        callbacks=[ks.callbacks.TensorBoard("./logs/pmMNIST")],
+    )
+
+   #history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 15)
+
+    #PlotModel(history)
+    #PrintAccuracy(result)

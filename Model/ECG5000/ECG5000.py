@@ -8,7 +8,7 @@ import LMU as LMULayer
 import LRMU as LRMULayer
 import os
 
-
+from Utility.Debug import PrintAvailableGPU
 
 
 def ModelFFBaseline():
@@ -94,8 +94,10 @@ def ModelLRMUWhitTuning(hp):
 
 
 def Run():
-    print(tf.config.list_physical_devices('GPU'))
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+    PrintAvailableGPU()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
     path = "Data/"
     Data, Label = ReadFromCSVToKeras(path + "ECG5000_ALL.csv")
     Label -= 1
@@ -103,13 +105,14 @@ def Run():
 
     tuner = keras_tuner.RandomSearch(
         ModelLRMUWhitTuning,
-        max_trials=30,
+        project_name="ECG5000",
+        max_trials=100,
         executions_per_trial=1,
         # Do not resume the previous search in the same directory.
         overwrite=True,
         objective="val_accuracy",
         # Set a directory to store the intermediate results.
-        directory="./tmp/tb",
+        directory="./logs/Ecg5000/tmp",
 
     )
 
@@ -118,13 +121,12 @@ def Run():
         training.Label,
         validation_data=(validation.Data, validation.Label),
         epochs=2,
-
         # Use the TensorBoard callback.
-        # The logs will be write to "/tmp/tb_logs".
-        callbacks=[ks.callbacks.TensorBoard("./tmp/tb_logs")],
+        callbacks=[ks.callbacks.TensorBoard("./logs/Ecg5000")],
     )
 
-    # history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)
+
+# history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)
 
     # pu.PlotModel(history)
     # pu.PrintAccuracy(result)

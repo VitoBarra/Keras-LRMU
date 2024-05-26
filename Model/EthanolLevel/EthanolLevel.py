@@ -1,3 +1,5 @@
+import os
+
 import keras as ks
 
 from Utility.ArffFormatUtill import *
@@ -5,6 +7,7 @@ import LMU as kslu
 import Utility.PlotUtil as pu
 from Utility.ModelUtil import *
 from Utility.DataUtil import *
+from Utility.Debug import *
 
 
 def ModelLMU():
@@ -68,6 +71,11 @@ def ModelFFBaseline():
 
 
 def Run():
+
+    PrintAvailableGPU()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+
     path = "Data/"
     samplingRate = 3
 
