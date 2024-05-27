@@ -1,3 +1,6 @@
+import tensorflow.keras as ks
+
+
 def TrainAndTestModel_OBJ(buildModel, train, validation, test, batch_size=128, epochs=15):
     return TrainAndTestModel(buildModel, train.Data, train.Label, validation.Data, validation.Label, test.Data,
                              test.Label,
@@ -7,9 +10,20 @@ def TrainAndTestModel_OBJ(buildModel, train, validation, test, batch_size=128, e
 def TrainAndTestModel(buildModel, x_train, y_train, x_val, y_val, x_test, y_test, batch_size=128, epochs=15):
 
     model = buildModel()
+
+    checkpoint_filepath = '/tmp/ckpt/checkpoint.model.keras'
+    model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
+    filepath=checkpoint_filepath,
+    monitor='val_accuracy',
+    mode='auto',
+    save_best_only=True)
+
     history = model.fit(x_train, y_train,
                         batch_size=batch_size,
                         epochs=epochs,
-                        validation_data=(x_val, y_val))
+                        validation_data=(x_val, y_val),
+                        callbacks=[model_checkpoint_callback])
+    ks.models.load_model(checkpoint_filepath)
+
     result = model.evaluate(x_test, y_test, batch_size=batch_size)
     return history, result

@@ -15,13 +15,13 @@ from Utility.ModelUtil import TrainAndTestModel_OBJ
 
 
 def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
-              memoryToMemory, hiddenToMemory, inputToCell, useBias):
+              memoryToMemory, hiddenToMemory, inputToCell, useBias ):
     sequence_length = 784
     classNumber = 10
     inputs = ks.Input(shape=(sequence_length, 1), name="pmMNIST_Input_LRMU")
     feature = lrmu.LRMU(memoryDimension=memoryDim, order=order, theta=sequence_length, hiddenUnit=hiddenUnit,
                         spectraRadius=spectraRadius, reservoirMode=reservoirMode, hiddenCell=hiddenCell,
-                        memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToCell=inputToCell,
+                        memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToHiddenCell=inputToCell,
                         useBias=useBias)(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="pmMNIST_LRMU_Model")
@@ -47,9 +47,12 @@ def ModelLRMUWhitTuning(hp):
                      memoryToMemory, hiddenToMemory, inputToCell, useBias)
 
 
+
+
 def ModelLRMU_P():
-    return ModelLRMU(80,128,150,1.2,
-                     True,None,False,True,False,False)
+    return ModelLRMU(75,352,500,1.15,
+                     True,None,False,True,False,True)
+
 
 
 
@@ -65,33 +68,33 @@ def Run():
 
     Data = Data.reshape(Data.shape[0], -1, 1)
     perm = rng.permutation(Data.shape[1])
-    Data = Data[:30000, perm]
-    Label = Label[:30000]
+    Data = Data[:10000, perm]
+    Label = Label[:10000]
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
-    tuner = keras_tuner.RandomSearch(
-         ModelLRMUWhitTuning,
-         max_trials=100,
-        project_name="pmMNIST",
-        executions_per_trial=1,
-        # Do not resume the previous search in the same directory.
-        overwrite=True,
-        objective="val_accuracy",
-        # Set a directory to store the intermediate results.
-        directory="./logs/pmMNIST/tmp",
+    # tuner = keras_tuner.RandomSearch(
+    #     ModelLRMUWhitTuning,
+    #     max_trials=100,
+    #     project_name="pmMNIST",
+    #     executions_per_trial=1,
+    #     # Do not resume the previous search in the same directory.
+    #     overwrite=True,
+    #     objective="val_accuracy",
+    #     # Set a directory to store the intermediate results.
+    #     directory="./logs/pmMNIST/tmp",
+    #
+    # )
 
-    )
+    # tuner.search(
+    #     training.Data,
+    #     training.Label,
+    #     validation_data=(validation.Data, validation.Label),
+    #     epochs=2,
+    #     # Use the TensorBoard callback.
+    #     callbacks=[ks.callbacks.TensorBoard("./logs/pmMNIST")],
+    # )
 
-    tuner.search(
-        training.Data,
-        training.Label,
-        validation_data=(validation.Data, validation.Label),
-        epochs=2,
-        # Use the TensorBoard callback.
-        callbacks=[ks.callbacks.TensorBoard("./logs/pmMNIST")],
-    )
+    history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 2)
 
-   #history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 15)
-
-    #PlotModel(history)
-    #PrintAccuracy(result)
+    PrintAccuracy(result)
+    PlotModel(history, "Plot/pmMNIST","pmMNIST_LRMU_ESN")

@@ -65,7 +65,7 @@ def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hidden
     inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input_LRMU")
     feature = LRMULayer.LRMU(memoryDimension=memoryDim, order=order, theta=sequence_length, hiddenUnit=hiddenUnit,
                              spectraRadius=spectraRadius, reservoirMode=reservoirMode, hiddenCell=hiddenCell,
-                             memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToCell=inputToCell,
+                             memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToHiddenCell=inputToCell,
                              useBias=useBias)(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")

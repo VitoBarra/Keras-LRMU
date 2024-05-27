@@ -1,7 +1,9 @@
+import os
+
 from matplotlib import pyplot as plt
 
 
-def PlotModel(history):
+def PlotModel(history,path= None,filename= None):
     plt.title('model loss')
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
@@ -17,7 +19,15 @@ def PlotModel(history):
     ax2.plot(history.history['accuracy'])
     ax2.plot(history.history['val_accuracy'])
     ax2.legend(['train', 'validation'], loc='upper left')
-    fig.show()
+
+    if path is None or path is '':
+        plt.show()
+    else :
+        if not os.path.exists(path):
+            os.makedirs(path)
+        if filename is None or filename is '':
+            filename = 'model'
+        plt.savefig(f"{path}/{filename}.png")
 
 
 def PrintAccuracy(result):

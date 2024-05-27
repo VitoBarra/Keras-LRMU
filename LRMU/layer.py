@@ -17,13 +17,15 @@ else:
 
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMUCell(keras.layers.Layer):
-    def __init__(self, memoryDimension, order, theta, hiddenUnit=0, spectraRadius=0.99,
-                 reservoirMode=True, hiddenCell=None, memoryToMemory=False, hiddenToMemory=False,
-                 inputToCell=False, useBias=False, seed=0, **kwargs):
+    def __init__(self, memoryDimension, order, theta,
+                 hiddenUnit=0, spectraRadius=0.99,
+                 reservoirMode=True, hiddenCell=None,
+                 memoryToMemory=False, hiddenToMemory=False, inputToCell=False,
+                 useBias=False, seed=0, **kwargs):
         super().__init__()
         self.MemoryDim = memoryDimension
         self.Order = order
-        self._init_theta = theta
+        self.Theta = theta
         self.SpectraRadius = spectraRadius
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
@@ -33,9 +35,8 @@ class LRMUCell(keras.layers.Layer):
         self.ReservoirMode = reservoirMode
         self.Seed = seed
 
-        self.MemoryEncoder = None
-        self.HiddenEncoder = None
-        self.InputEncoder = None
+        self.RecurrentMemoryKernel = None
+        self.MemoryKernel = None
         self.HiddenUnit = hiddenUnit
 
         self.Bias = None
@@ -78,15 +79,14 @@ class LRMUCell(keras.layers.Layer):
         super().build(input_shape)
 
         inputDim = input_shape[-1]
-        self.InputEncoder = self.createWeight(shape=(inputDim, self.MemoryDim))
+        outDim = self.HiddenOutputSize
+
+        kernel_dim = inputDim + outDim if self.HiddenToMemory else outDim
+
+        self.MemoryKernel = self.createWeight(shape=(kernel_dim, self.MemoryDim))
 
         if self.MemoryToMemory:
-            self.MemoryEncoder = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim))
-
-        OutDim = self.HiddenOutputSize
-
-        if self.HiddenToMemory:
-            self.HiddenEncoder = self.createWeight(shape=(OutDim, self.MemoryDim))
+            self.RecurrentMemoryKernel = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim))
 
         if self.UseBias:
             self.Bias = self.createWeight(shape=(self.MemoryDim,))
@@ -98,21 +98,40 @@ class LRMUCell(keras.layers.Layer):
             with tf.name_scope(self.HiddenCell.name):
                 self.HiddenCell.build((input_shape[0], hidden_input_d), )
 
-        self._gen_AB()
+        self.GenerateABMatrix()
+
+    def GenerateABMatrix(self):
+        """Generates A and B matrices."""
+        # compute analog A/B matrices
+        Q = np.arange(self.Order, dtype=np.float64)
+        R = (2 * Q + 1)[:, None]
+        j, i = np.meshgrid(Q, Q)
+        A = np.where(i < j, -1, (-1.0) ** (i - j + 1)) * R
+        B = (-1.0) ** Q[:, None] * R
+
+        # discretize matrices with ZOH method
+        # save the un-discretized matrices for use in .call
+        self._base_A = tf.constant(A.T, dtype=self.dtype)
+        self._base_B = tf.constant(B.T, dtype=self.dtype)
+
+        self.A, self.B = M._cont2discrete_zoh(
+            self._base_A / self.Theta, self._base_B / self.Theta
+        )
 
     def call(self, inputs, states, training=False):
-
+        states_fat = tf.nest.flatten(states)
+        memory_state = states_fat[0]
+        hidden_state = states_fat[1:]
         # get Previous hidden/Memory State
-        states = tf.nest.flatten(states)
-        memory_state = states[0]
-        hidden_state = states[1:]
+
+        concat_input = inputs
+        if self.HiddenToMemory:
+            concat_input = tf.concat((concat_input, hidden_state[0]), axis=1)
 
         # Compute the new Memory State
-        u = tf.matmul(inputs, self.InputEncoder)
+        u = tf.matmul(concat_input, self.MemoryKernel)
         if self.MemoryToMemory:
-            u += tf.matmul(memory_state, self.MemoryEncoder)
-        if self.HiddenToMemory:
-            u += tf.matmul(hidden_state[0], self.HiddenEncoder)
+            u += tf.matmul(memory_state, self.RecurrentMemoryKernel)
         if self.UseBias:
             u += self.Bias
 
@@ -137,59 +156,53 @@ class LRMUCell(keras.layers.Layer):
 
         return output, [new_memory_state] + new_hidden_state
 
-    def _gen_AB(self):
-        """Generates A and B matrices."""
-
-        # compute analog A/B matrices
-        Q = np.arange(self.Order, dtype=np.float64)
-        R = (2 * Q + 1)[:, None]
-        j, i = np.meshgrid(Q, Q)
-        A = np.where(i < j, -1, (-1.0) ** (i - j + 1)) * R
-        B = (-1.0) ** Q[:, None] * R
-
-        # discretize matrices with ZOH method
-        # save the un-discretized matrices for use in .call
-        self._base_A = tf.constant(A.T, dtype=self.dtype)
-        self._base_B = tf.constant(B.T, dtype=self.dtype)
-
-        self.A, self.B = M._cont2discrete_zoh(
-            self._base_A / self._init_theta, self._base_B / self._init_theta
-        )
-
     def get_config(self):
         config = super().get_config()
         config.update(
             {
-                "memory_d": self.MemoryDim,
-                "order": self.Order,
-                "theta": self._init_theta,
-                "hidden_cell": keras.layers.serialize(self.HiddenCell),
-                "hidden_to_memory": self.HiddenToMemory,
-                "memory_to_memory": self.MemoryToMemory,
-                "input_to_hidden": self.InputToHiddenCell,
-                "use_bias": self.UseBias,
-                "seed": self.Seed,
-            }
-        )
+                "MemoryDim": self.MemoryDim,
+                "Order": self.Order,
+                "Theta": self.Theta,
+                "hiddenUnit": self.HiddenUnit,
+                "SpectraRadius": self.SpectraRadius,
+                "ReservoirMode": self.ReservoirMode,
+                "HiddenCell": keras.layers.serialize(self.HiddenCell),
+                "MemoryToMemory": self.MemoryToMemory,
+                "HiddenToMemory": self.HiddenToMemory,
+                "InputToHiddenCell": self.InputToHiddenCell,
+                "UseBias": self.UseBias,
+                "Seed": self.Seed})
 
         return config
+
+    @classmethod
+    def from_config(cls, config):
+        """Load model from serialized config."""
+
+        config["hidden_cell"] = (
+            None
+            if config["hidden_cell"] is None
+            else keras.layers.deserialize(config["hidden_cell"])
+        )
+        return super().from_config(config)
 
 
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMU(keras.layers.Layer):
 
     def __init__(self, memoryDimension, order, theta, hiddenUnit=0, spectraRadius=0.99,
-                 reservoirMode=True, hiddenCell=None, memoryToMemory=False, hiddenToMemory=False,
-                 inputToCell=False, useBias=False, seed=0, returnSequences = False, **kwargs):
+                 reservoirMode=True, hiddenCell=None,
+                 memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False,
+                 useBias=False, seed=0, returnSequences=False, **kwargs):
         super().__init__()
         self.MemoryDim = memoryDimension
         self.Order = order
-        self._init_theta = theta
+        self.Theta = theta
         self.HiddenUnit = hiddenUnit
         self.SpectraRadius = spectraRadius
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
-        self.InputToHiddenCell = inputToCell
+        self.InputToHiddenCell = inputToHiddenCell
         self.UseBias = useBias
         self.HiddenCell = hiddenCell
         self.ReservoirMode = reservoirMode
@@ -202,7 +215,7 @@ class LRMU(keras.layers.Layer):
         super().build(input_shape)
 
         self.layer = keras.layers.RNN(
-            LRMUCell(self.MemoryDim, self.Order, self._init_theta, self.HiddenUnit, self.SpectraRadius,
+            LRMUCell(self.MemoryDim, self.Order, self.Theta, self.HiddenUnit, self.SpectraRadius,
                      self.ReservoirMode, self.HiddenCell,
                      self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell,
                      self.UseBias, self.Seed), return_sequences=self.ReturnSequence)
@@ -216,19 +229,30 @@ class LRMU(keras.layers.Layer):
         """Return config of layer (for serialization during model saving/loading)."""
 
         config = super().get_config()
-        config.update(
-            {
-                "memory_d": self.MemoryDim,
-                "order": self.Order,
-                "theta": self._init_theta,
-                "hidden_cell": keras.layers.serialize(self.HiddenCell),
-                "hidden_to_memory": self.HiddenToMemory,
-                "memory_to_memory": self.MemoryToMemory,
-                "input_to_hidden": self.InputToHiddenCell,
-                "use_bias": self.UseBias,
-                "return_sequences": self.ReturnSequence,
-                "seed": self.Seed
-            }
-        )
+        config.update({
+            "MemoryDim": self.MemoryDim,
+            "Order": self.Order,
+            "Theta": self.Theta,
+            "hiddenUnit": self.HiddenUnit,
+            "SpectraRadius": self.SpectraRadius,
+            "ReservoirMode": self.ReservoirMode,
+            "HiddenCell": keras.layers.serialize(self.HiddenCell),
+            "MemoryToMemory": self.MemoryToMemory,
+            "HiddenToMemory": self.HiddenToMemory,
+            "InputToHiddenCell": self.InputToHiddenCell,
+            "UseBias": self.UseBias,
+            "Seed": self.Seed,
+            "ReturnSequence": self.ReturnSequence})
 
         return config
+
+    @classmethod
+    def from_config(cls, config):
+        """Load model from serialized config."""
+
+        config["hidden_cell"] = (
+            None
+            if config["hidden_cell"] is None
+            else keras.layers.deserialize(config["hidden_cell"])
+        )
+        return super().from_config(config)
