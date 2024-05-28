@@ -95,9 +95,6 @@ def ModelLRMUWhitTuning(hp):
 
 def Run():
 
-    PrintAvailableGPU()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
     path = "Data/"
     Data, Label = ReadFromCSVToKeras(path + "ECG5000_ALL.csv")
     Label -= 1

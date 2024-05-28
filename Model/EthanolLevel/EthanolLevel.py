@@ -70,16 +70,13 @@ def ModelFFBaseline():
     return model
 
 
-def Run():
-
-    PrintAvailableGPU()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+def Run(dataPath):
 
 
-    path = "Data/"
+
     samplingRate = 3
 
-    rawData, rawLabel = ReadFromCSVToKeras(path + "EthanolLevel_ALL.csv")
+    rawData, rawLabel = ReadFromCSVToKeras(dataPath + "EthanolLevel_ALL.csv")
 
     Data = CropTimeSeries(rawData, 250)
     Data = TimeSeriesSampleRate(Data, samplingRate)

@@ -23,7 +23,7 @@ def TrainAndTestModel(buildModel, x_train, y_train, x_val, y_val, x_test, y_test
                         epochs=epochs,
                         validation_data=(x_val, y_val),
                         callbacks=[model_checkpoint_callback])
-    ks.models.load_model(checkpoint_filepath)
+    model = ks.models.load_model(checkpoint_filepath)
 
     result = model.evaluate(x_test, y_test, batch_size=batch_size)
     return history, result

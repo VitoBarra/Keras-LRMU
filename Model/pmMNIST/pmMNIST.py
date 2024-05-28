@@ -15,7 +15,7 @@ from Utility.ModelUtil import TrainAndTestModel_OBJ
 
 
 def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
-              memoryToMemory, hiddenToMemory, inputToCell, useBias ):
+              memoryToMemory, hiddenToMemory, inputToCell, useBias):
     sequence_length = 784
     classNumber = 10
     inputs = ks.Input(shape=(sequence_length, 1), name="pmMNIST_Input_LRMU")
@@ -47,19 +47,17 @@ def ModelLRMUWhitTuning(hp):
                      memoryToMemory, hiddenToMemory, inputToCell, useBias)
 
 
-
-
+#75, 352, 500, 1.15,True, None, False, True, False, True = %92.22 accuracy on test set
+#75, 352, 500, 1.18,True, None, False, True, False, True = %91.88 accuracy on test set
+#256, 128, 212, 1.15,True, None, False, True, False, True = %87.4. accuracy on test set, hyper parameter  of the orginagl paper
+#256, 128, 212, 0.99,True, None, False, True, False, True = % accuracy on test set, hyper parameter  of the orginagl paper
 def ModelLRMU_P():
-    return ModelLRMU(75,352,500,1.15,
-                     True,None,False,True,False,True)
-
-
+    return ModelLRMU(256, 128, 212, 0.99,
+                     True, None, False, True, False, True)
 
 
 def Run():
 
-    PrintAvailableGPU()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     ((train_images, train_labels), (test_images, test_labels)) = ks.datasets.mnist.load_data()
 
@@ -67,9 +65,10 @@ def Run():
     Label = np.concatenate((train_labels, test_labels), axis=0)
 
     Data = Data.reshape(Data.shape[0], -1, 1)
+    rng.seed(1509)
     perm = rng.permutation(Data.shape[1])
-    Data = Data[:10000, perm]
-    Label = Label[:10000]
+    Data = Data[:, perm]
+    Label = Label[:]
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
     # tuner = keras_tuner.RandomSearch(
@@ -94,7 +93,7 @@ def Run():
     #     callbacks=[ks.callbacks.TensorBoard("./logs/pmMNIST")],
     # )
 
-    history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 2)
+    history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 10)
 
     PrintAccuracy(result)
-    PlotModel(history, "Plot/pmMNIST","pmMNIST_LRMU_ESN")
+    PlotModel(history, "./Plot/pmMNIST", "pmMNIST_LRMU_ESN")

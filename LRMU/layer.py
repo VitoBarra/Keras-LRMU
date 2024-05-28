@@ -20,16 +20,16 @@ class LRMUCell(keras.layers.Layer):
     def __init__(self, memoryDimension, order, theta,
                  hiddenUnit=0, spectraRadius=0.99,
                  reservoirMode=True, hiddenCell=None,
-                 memoryToMemory=False, hiddenToMemory=False, inputToCell=False,
+                 memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False,
                  useBias=False, seed=0, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
         self.SpectraRadius = spectraRadius
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
-        self.InputToHiddenCell = inputToCell
+        self.InputToHiddenCell = inputToHiddenCell
         self.UseBias = useBias
         self.HiddenCell = hiddenCell
         self.ReservoirMode = reservoirMode
@@ -160,18 +160,18 @@ class LRMUCell(keras.layers.Layer):
         config = super().get_config()
         config.update(
             {
-                "MemoryDim": self.MemoryDim,
-                "Order": self.Order,
-                "Theta": self.Theta,
+                "memoryDimension": self.MemoryDim,
+                "order": self.Order,
+                "theta": self.Theta,
                 "hiddenUnit": self.HiddenUnit,
-                "SpectraRadius": self.SpectraRadius,
-                "ReservoirMode": self.ReservoirMode,
-                "HiddenCell": keras.layers.serialize(self.HiddenCell),
-                "MemoryToMemory": self.MemoryToMemory,
-                "HiddenToMemory": self.HiddenToMemory,
-                "InputToHiddenCell": self.InputToHiddenCell,
-                "UseBias": self.UseBias,
-                "Seed": self.Seed})
+                "spectraRadius": self.SpectraRadius,
+                "reservoirMode": self.ReservoirMode,
+                "hiddenCell": keras.layers.serialize(self.HiddenCell),
+                "memoryToMemory": self.MemoryToMemory,
+                "hiddenToMemory": self.HiddenToMemory,
+                "inputToHiddenCell": self.InputToHiddenCell,
+                "useBias": self.UseBias,
+                "seed": self.Seed})
 
         return config
 
@@ -179,10 +179,10 @@ class LRMUCell(keras.layers.Layer):
     def from_config(cls, config):
         """Load model from serialized config."""
 
-        config["hidden_cell"] = (
+        config["hiddenCell"] = (
             None
-            if config["hidden_cell"] is None
-            else keras.layers.deserialize(config["hidden_cell"])
+            if config["hiddenCell"] is None
+            else keras.layers.deserialize(config["hiddenCell"])
         )
         return super().from_config(config)
 
@@ -194,7 +194,7 @@ class LRMU(keras.layers.Layer):
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False,
                  useBias=False, seed=0, returnSequences=False, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
@@ -230,19 +230,19 @@ class LRMU(keras.layers.Layer):
 
         config = super().get_config()
         config.update({
-            "MemoryDim": self.MemoryDim,
-            "Order": self.Order,
-            "Theta": self.Theta,
+            "memoryDimension": self.MemoryDim,
+            "order": self.Order,
+            "theta": self.Theta,
             "hiddenUnit": self.HiddenUnit,
-            "SpectraRadius": self.SpectraRadius,
-            "ReservoirMode": self.ReservoirMode,
-            "HiddenCell": keras.layers.serialize(self.HiddenCell),
-            "MemoryToMemory": self.MemoryToMemory,
-            "HiddenToMemory": self.HiddenToMemory,
-            "InputToHiddenCell": self.InputToHiddenCell,
-            "UseBias": self.UseBias,
-            "Seed": self.Seed,
-            "ReturnSequence": self.ReturnSequence})
+            "spectraRadius": self.SpectraRadius,
+            "reservoirMode": self.ReservoirMode,
+            "hiddenCell": keras.layers.serialize(self.HiddenCell),
+            "memoryToMemory": self.MemoryToMemory,
+            "hiddenToMemory": self.HiddenToMemory,
+            "inputToHiddenCell": self.InputToHiddenCell,
+            "useBias": self.UseBias,
+            "seed": self.Seed,
+            "returnSequences": self.ReturnSequence})
 
         return config
 
@@ -250,9 +250,9 @@ class LRMU(keras.layers.Layer):
     def from_config(cls, config):
         """Load model from serialized config."""
 
-        config["hidden_cell"] = (
+        config["hiddenCell"] = (
             None
-            if config["hidden_cell"] is None
-            else keras.layers.deserialize(config["hidden_cell"])
+            if config["hiddenCell"] is None
+            else keras.layers.deserialize(config["hiddenCell"])
         )
         return super().from_config(config)
