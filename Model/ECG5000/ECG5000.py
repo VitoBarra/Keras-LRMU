@@ -48,7 +48,7 @@ def ModelLMU():
     feature = LMULayer.LMU(
         10, theta=140, order=32, memory_to_memory=True, hidden_to_memory=True,
         use_bias=True, trainable_theta=True, seed=159,
-        hidden_cell=ks.layers.LSTM(50))(inputs)
+        hidden_cell=ks.layers.LSTMCell(50))(inputs)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
     model.summary()

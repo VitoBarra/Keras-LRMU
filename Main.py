@@ -7,5 +7,5 @@ from Utility.Debug import PrintAvailableGPU
 
 if __name__ == "__main__":
     PrintAvailableGPU()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-    pmMNIST.Run()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+    pmMNIST.Run(False)
