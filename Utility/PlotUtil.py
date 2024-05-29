@@ -3,8 +3,19 @@ import os
 from matplotlib import pyplot as plt
 
 
-def PlotModel(history,path= None,filename= None):
-    plt.title('model loss')
+
+def PlotModelLoss(history, modelName = 'Model',path= None, filename= None ):
+    plt.title(modelName)
+
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='upper left')
+    ShowOrSavePlot(path, filename)
+
+def PlotModelAccuracy(history,modelName = 'Model' , path= None, filename= None ):
+    plt.title(modelName)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
@@ -19,7 +30,9 @@ def PlotModel(history,path= None,filename= None):
     ax2.plot(history.history['accuracy'])
     ax2.plot(history.history['val_accuracy'])
     ax2.legend(['train', 'validation'], loc='upper left')
+    ShowOrSavePlot(path, filename)
 
+def ShowOrSavePlot(path=None, filename=None):
     if path is None or path is '':
         plt.show()
     else :
@@ -30,7 +43,8 @@ def PlotModel(history,path= None,filename= None):
         plt.savefig(f"{path}/{filename}.png")
 
 
-def PrintAccuracy(result):
+def PrintLoss(result):
     print('Test loss:', result[0])
+def PrintAccuracy(result):
+    PrintLoss(result)
     print('Test accuracy:', result[1])
-    return result

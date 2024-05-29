@@ -5,3 +5,4 @@ tensorflow
 packaging
 scipy
 keras_tuner
+seaborn

@@ -9,7 +9,10 @@ import LRMU as LRMULayer
 import os
 
 from Utility.Debug import PrintAvailableGPU
+from Utility.ModelUtil import TrainAndTestModel_OBJ
+from Utility.PlotUtil import PrintAccuracy, PlotModelAccuracy
 
+PROBLEM_NAME = "ECG5000"
 
 def ModelFFBaseline():
     sequence_length = 140
@@ -90,27 +93,26 @@ def ModelLRMUWhitTuning(hp):
     return ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
                          memoryToMemory, hiddenToMemory, inputToCell, useBias)
 
-    #return ModelLRMU(15, 64, 1050, 0.8, True, None, True, False, True, False)
+def ModelLRMU_P():
+    return ModelLRMU(15, 64, 1050, 0.8, True, None, True, False, True, False)
+
+def FullTraining(training, validation, test):
+        history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 10)
+
+        PrintAccuracy(result)
+        PlotModelAccuracy(history, "Model LRMU",f"./plots/{PROBLEM_NAME}", f"{PROBLEM_NAME}_LRMU_ESN")
 
 
-def Run():
-
-    path = "Data/"
-    Data, Label = ReadFromCSVToKeras(path + "ECG5000_ALL.csv")
-    Label -= 1
-    training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
-
-    tuner = keras_tuner.RandomSearch(
+def TunerTraining(training, validation, test):
+    tuner = keras_tuner.GridSearch(
         ModelLRMUWhitTuning,
-        project_name="ECG5000",
-        max_trials=100,
+        project_name=f"{PROBLEM_NAME}",
         executions_per_trial=1,
         # Do not resume the previous search in the same directory.
         overwrite=True,
         objective="val_accuracy",
         # Set a directory to store the intermediate results.
-        directory="./logs/Ecg5000/tmp",
-
+        directory=f"./logs/{PROBLEM_NAME}/tmp",
     )
 
     tuner.search(
@@ -119,11 +121,21 @@ def Run():
         validation_data=(validation.Data, validation.Label),
         epochs=2,
         # Use the TensorBoard callback.
-        callbacks=[ks.callbacks.TensorBoard("./logs/Ecg5000")],
+        callbacks=[ks.callbacks.TensorBoard(f"./logs/{PROBLEM_NAME}2")],
     )
 
 
-# history, result = TrainAndTestModel_OBJ(ModelLRMU, training, validation, test, 128, 15)
 
-    # pu.PlotModel(history)
-    # pu.PrintAccuracy(result)
+def Run(fullTraining = True):
+
+    path = "Data/"
+    Data, Label = ReadFromCSVToKeras(path + "ECG5000_ALL.csv")
+    Label -= 1
+    training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
+
+
+    if fullTraining:
+        FullTraining(training, validation, test)
+    else:
+        TunerTraining(training, validation, test)
+

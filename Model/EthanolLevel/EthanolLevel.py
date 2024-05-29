@@ -9,11 +9,12 @@ from Utility.ModelUtil import *
 from Utility.DataUtil import *
 from Utility.Debug import *
 
+PROBLEM_NAME = "EthanolLevel"
 
 def ModelLMU():
     sequence_length = 500
     numberOfClass = 4
-    inputs = ks.Input(shape=(sequence_length, 1), name="ET_Input")
+    inputs = ks.Input(shape=(sequence_length, 1), name=f"{PROBLEM_NAME}_Input")
     feature = kslu.LMU(5, return_sequences=True,
                        order=256, theta=sequence_length,
                        trainable_theta=True,
@@ -24,7 +25,7 @@ def ModelLMU():
                        hidden_cell=ks.layers.SimpleRNNCell(100))(feature)
     outputs = ks.layers.Dense(numberOfClass, activation="softmax")(feature)
     outputs = ks.layers.Reshape((numberOfClass,))(outputs)
-    model = ks.Model(inputs=inputs, outputs=outputs, name="EthanolLevelModel")
+    model = ks.Model(inputs=inputs, outputs=outputs, name=f"{PROBLEM_NAME}Model")
 
     model.summary()
     model.compile(optimizer='adam', loss="sparse_categorical_crossentropy", metrics=["accuracy"])
@@ -34,7 +35,7 @@ def ModelLMU():
 def ModelLSTM():
     sequence_length = 500
     classNumber = 4
-    inputs = ks.Input(shape=(sequence_length, 1), name="ECG5000_Input")
+    inputs = ks.Input(shape=(sequence_length, 1), name=f"{PROBLEM_NAME}_Input")
     feature = ks.layers.LSTM(250, return_sequences=True)(inputs)
     feature = ks.layers.LSTM(250, return_sequences=True)(feature)
     feature = ks.layers.LSTM(250, return_sequences=True)(feature)
@@ -42,7 +43,7 @@ def ModelLSTM():
     feature = ks.layers.LSTM(250, return_sequences=True)(feature)
     feature = ks.layers.LSTM(250, return_sequences=False)(feature)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
-    model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
+    model = ks.Model(inputs=inputs, outputs=outputs, name=f"{PROBLEM_NAME}Model")
     model.summary()
     model.compile(optimizer="adam",
                   loss="sparse_categorical_crossentropy",
@@ -53,7 +54,7 @@ def ModelLSTM():
 def ModelFFBaseline():
     sequence_length = 500
     classNumber = 4
-    inputs = ks.Input(shape=(sequence_length,), name="ECG5000_Input")
+    inputs = ks.Input(shape=(sequence_length,), name=f"{PROBLEM_NAME}_Input")
     feature = ks.layers.Dense(1000)(inputs)
     feature = ks.layers.Dense(1000)(feature)
     feature = ks.layers.Dense(1000)(feature)
@@ -62,7 +63,7 @@ def ModelFFBaseline():
     feature = ks.layers.Dense(1000)(feature)
     outputs = ks.layers.Dense(classNumber, activation="softmax")(feature)
 
-    model = ks.Model(inputs=inputs, outputs=outputs, name="ECG5000Model")
+    model = ks.Model(inputs=inputs, outputs=outputs, name=f"{PROBLEM_NAME}Model")
     model.summary()
     model.compile(optimizer="adam",
                   loss="sparse_categorical_crossentropy",
@@ -86,4 +87,4 @@ def Run(dataPath):
     training, validation, test = SplitDataset(Data, Label, 0.15, 0.1)
 
     history, result = TrainAndTestModel_OBJ(ModelLMU, training, validation, test, 32, 50)
-    pu.PlotModel(history, result)
+    pu.PlotModelAccuracy(history, result)
