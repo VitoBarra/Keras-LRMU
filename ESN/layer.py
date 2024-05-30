@@ -1,5 +1,5 @@
-import keras
-from ESN.InizializationFunc import *
+from keras.initializers import *
+from ESN.Inizializer import *
 
 
 class ReservoirCell(keras.layers.Layer):
@@ -8,7 +8,7 @@ class ReservoirCell(keras.layers.Layer):
     def __init__(self, units,
                  input_scaling=1.0, bias_scaling=1.0,
                  spectral_radius=0.99,
-                 leaky=1, activation=tf.nn.tanh,
+                 leaky=1, activation=tf.nn.tanh, seed=0,
                  **kwargs):
 
         self.units = units
@@ -19,18 +19,26 @@ class ReservoirCell(keras.layers.Layer):
         self.leaky = leaky  # leaking rate
         self.activation = activation
         self.output_size = units
+        self.seed = seed
 
         super().__init__(**kwargs)
 
     def build(self, input_shape):
 
-        self.recurrent_kernel = BuildRecurentWeight(self.spectral_radius, self.units)
-        # build the input weight matrix
-        self.kernel = tf.random.uniform(shape=(input_shape[-1], self.units), minval=-self.input_scaling,
-                                        maxval=self.input_scaling)
+        tf.random.set_seed(self.seed)
+        self.recurrent_kernel = self.add_weight(shape=(self.units, self.units),
+                                                initializer=FastReccurrentSR(self.spectral_radius, self.units, self.seed),
+                                                trainable=False)
+
+        self.kernel = self.add_weight(shape=(input_shape[-1], self.units),
+                                      initializer=RandomUniform(-self.input_scaling, self.input_scaling,
+                                                                seed=self.seed),
+                                      trainable=False)
 
         # initialize the bias
-        self.bias = tf.random.uniform(shape=(self.units,), minval=-self.bias_scaling, maxval=self.bias_scaling)
+        self.bias = self.add_weight(shape=(self.units,),
+                                    initializer=RandomUniform(-self.bias_scaling, self.bias_scaling, seed=self.seed),
+                                    trainable=False)
         self.built = True
 
     def call(self, inputs, states):

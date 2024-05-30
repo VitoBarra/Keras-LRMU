@@ -6,12 +6,13 @@ import tensorflow as tf
 import tensorflow.keras as ks
 import seaborn as sns
 import LRMU as lrmu
+from keras.initializers import *
 
 import matplotlib.pyplot as plt
 
 from Utility.DataUtil import SplitDataset
 from Utility.ModelUtil import TrainAndTestModel_OBJ
-from Utility.PlotUtil import PrintAccuracy, PlotModelAccuracy, PrintLoss, PlotModelLoss
+from Utility.PlotUtil import *
 
 PROBLEM_NAME = "MackeyGlass"
 SEQUENCE_LENGHT = 5000
@@ -48,8 +49,7 @@ def mackey_glass(sample_len=1000, tau=17, delta_t=10, seed=None, n_samples=1):
             for _ in range(delta_t):
                 xtau = history.popleft()
                 history.append(timeseries)
-                timeseries = history[-1] + (0.2 * xtau / (1.0 + xtau ** 10) - \
-                                            0.1 * history[-1]) / delta_t
+                timeseries = history[-1] + (0.2 * xtau / (1.0 + xtau ** 10) - 0.1 * history[-1]) / delta_t
             inp[timestep] = timeseries
 
         # Squash timeseries through tanh
@@ -58,21 +58,19 @@ def mackey_glass(sample_len=1000, tau=17, delta_t=10, seed=None, n_samples=1):
     return samples
 
 
-def generate_data(n_batches, length, split=0.5, seed=0,
+def generate_data(n_series, length, seed=0,
                   predict_length=15, tau=17, washout=100, delta_t=1,
                   center=True):
     X = np.asarray(mackey_glass(
         sample_len=length + predict_length + washout, tau=tau,
-        seed=seed, n_samples=n_batches))
+        seed=seed, n_samples=n_series))
     X = X[:, washout:, :]
-    cutoff = int(split * n_batches)
     if center:
         X -= np.mean(X)  # global mean over all batches, approx -0.066
     Y = X[:, predict_length:, :]
     X = X[:, :-predict_length, :]
     assert X.shape == Y.shape
-    return ((X[:cutoff], Y[:cutoff]),
-            (X[cutoff:], Y[cutoff:]))
+    return X, Y
 
 
 def cool_plot(X, Y, title=""):
@@ -85,22 +83,23 @@ def cool_plot(X, Y, title=""):
     plt.ylabel("$y(t) - x(t)$")
     sns.despine(offset=15)
 
-    plt.show()
+    ShowOrSavePlot("./plots", "MackeyGlass")
 
 
-def ModelLRMU_P():
-    return ModelLRMU(1, 256, 212, 1.18,
-                     True, None, False, True, False, False, 0)
+def ModelLRMU_SelectedHP():
+    return ModelLRMU(2, 16, 416, 1.05,
+                     True, None,
+                     False, True, False, False, 0)
 
 
 def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
               memoryToMemory, hiddenToMemory, inputToCell, useBias, seed):
     inputs = ks.Input(shape=(SEQUENCE_LENGHT, 1), name="Mackey-Glass_Input_LRMU")
-    feature = lrmu.LRMU(memoryDimension=memoryDim, order=order, theta=SEQUENCE_LENGHT, hiddenUnit=hiddenUnit,
+    feature = lrmu.LRMU(memoryDimension=memoryDim, order=order, theta=32, hiddenUnit=hiddenUnit,
                         spectraRadius=spectraRadius, reservoirMode=reservoirMode, hiddenCell=hiddenCell,
                         memoryToMemory=memoryToMemory, hiddenToMemory=hiddenToMemory, inputToHiddenCell=inputToCell,
                         useBias=useBias, seed=seed)(inputs)
-    outputs = ks.layers.Dense(SEQUENCE_LENGHT, activation="linear")(feature)
+    outputs = ks.layers.Dense(1, activation="linear", kernel_initializer=GlorotUniform(seed))(feature)
     model = ks.Model(inputs=inputs, outputs=outputs, name="Mackey-Glass_LRMU_Model")
     model.summary()
     model.compile(optimizer="adam",
@@ -110,14 +109,14 @@ def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hidden
 
 
 def ModelLRMUWhitTuning(hp):
-    memoryDim = hp.Int("memoryDim", min_value=1, max_value=16, step=1)
-    order = hp.Int("order", min_value=16, max_value=256, step=16)
-    hiddenUnit = hp.Int("hiddenUnit", min_value=128, max_value=512, step=16)
-    spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.025)
-    memoryToMemory = True
-    hiddenToMemory = True
-    inputToHiddenCell = True
-    useBias = True
+    memoryDim =2
+    order = 16
+    hiddenUnit = 416
+    spectraRadius = 1.05
+    memoryToMemory = hp.Boolean("memoryToMemory")
+    hiddenToMemory = hp.Boolean("hiddenToMemory")
+    inputToHiddenCell = hp.Boolean("inputToCell")
+    useBias = hp.Boolean("useBias")
 
     reservoirMode = True
     hiddenCell = None
@@ -127,43 +126,43 @@ def ModelLRMUWhitTuning(hp):
 
 
 def FullTraining(training, validation, test):
-    history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 10, "val_loss")
+    history, result = TrainAndTestModel_OBJ(ModelLRMU_SelectedHP, training, validation, test, 64, 15, "val_loss")
 
-    PrintLoss(result)
+    print("test loss:", result[0])
+    print("test mse:", result[1])
     PlotModelLoss(history, "Model LRMU", f"./plots/{PROBLEM_NAME}", f"{PROBLEM_NAME}_LRMU_ESN")
 
 
-def TunerTraining(training, validation, test):
-    tuner = keras_tuner.GridSearch(
+def TunerTraining(training, validation):
+    dirName = f"./logs/{PROBLEM_NAME}_bool_linear"
+    tuner = keras_tuner.RandomSearch(
         ModelLRMUWhitTuning,
+        max_trials=200,
         project_name=f"{PROBLEM_NAME}",
         executions_per_trial=1,
         # Do not resume the previous search in the same directory.
         overwrite=True,
         objective="val_loss",
         # Set a directory to store the intermediate results.
-        directory=f"./logs/{PROBLEM_NAME}/tmp",
+        directory=f"{dirName}/tmp",
     )
 
     tuner.search(
         training.Data,
         training.Label,
         validation_data=(validation.Data, validation.Label),
-        epochs=2,
+        epochs=15,
         # Use the TensorBoard callback.
-        callbacks=[ks.callbacks.TensorBoard(f"./logs/{PROBLEM_NAME}_2")],
+        callbacks=[ks.callbacks.TensorBoard(f"{dirName}")],
     )
 
 
 def Run(fullTraining=True):
-    (train_X, train_Y), (test_X, test_Y) = generate_data(128, SEQUENCE_LENGHT)
-    cool_plot(train_X[0], train_Y[0])
-
-    data = np.concatenate((train_X, test_X), axis=0)
-    label = np.concatenate((train_Y, test_Y), axis=0)
+    data, label = generate_data(128, SEQUENCE_LENGHT)
     training, validation, test = SplitDataset(data, label, 0.1, 0.1)
+    print(data.shape, label.shape)
 
     if fullTraining:
         FullTraining(training, validation, test)
     else:
-        TunerTraining(training, validation, test)
+        TunerTraining(training, validation)

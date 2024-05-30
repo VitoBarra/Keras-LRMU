@@ -1,7 +1,8 @@
+import keras.initializers
 from packaging import version
 from Utility import MathUtility as M
 from ESN.layer import *
-from ESN.InizializationFunc import *
+from ESN.Inizializer import *
 import math
 
 tf_version = version.parse(tf.__version__)
@@ -67,10 +68,8 @@ class LRMUCell(keras.layers.Layer):
 
     def createWeight(self, shape, inizializer="glorot_uniform"):
         if self.ReservoirMode:
-            value = 1
-            if len(shape) > 1:
-                value = math.sqrt(6 / (shape[0] + shape[1]))
-            return tf.random.uniform(shape=shape, minval=-value, maxval=value)
+            initializer = keras.initializers.GlorotUniform(seed=self.Seed)
+            return self.add_weight(shape=shape, initializer=initializer, trainable=False)
         else:
             return self.add_weight(shape=shape, initializer=inizializer)
 
@@ -81,7 +80,7 @@ class LRMUCell(keras.layers.Layer):
         inputDim = input_shape[-1]
         outDim = self.HiddenOutputSize
 
-        kernel_dim = inputDim + outDim if self.HiddenToMemory else outDim
+        kernel_dim = inputDim + outDim if self.HiddenToMemory else inputDim
 
         self.MemoryKernel = self.createWeight(shape=(kernel_dim, self.MemoryDim))
 

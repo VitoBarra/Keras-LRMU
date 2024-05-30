@@ -63,7 +63,8 @@ def ModelLRMU_P():
 def FullTraining(training, validation, test):
         history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 10)
 
-        PrintAccuracy(result)
+        print(f"Test loss: {result[0]}")
+        print(f"Test accuracy: {result[1]}")
         PlotModelAccuracy(history, "Model LRMU",f"./plots/{PROBLEM_NAME}", f"{PROBLEM_NAME}_LRMU_ESN")
 
 

@@ -8,5 +8,6 @@ from Utility.Debug import PrintAvailableGPU
 
 if __name__ == "__main__":
     PrintAvailableGPU()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-    MackeyGlass.Run(False)
+    #os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPUSelection.pick_gpu_lowest_memory()}"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    MackeyGlass.Run(True)

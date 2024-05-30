@@ -10,7 +10,7 @@ import os
 
 from Utility.Debug import PrintAvailableGPU
 from Utility.ModelUtil import TrainAndTestModel_OBJ
-from Utility.PlotUtil import PrintAccuracy, PlotModelAccuracy
+from Utility.PlotUtil import *
 
 PROBLEM_NAME = "ECG5000"
 
@@ -88,10 +88,10 @@ def ModelLRMUWhitTuning(hp):
     hiddenCell = None
     memoryToMemory = hp.Boolean("memoryToMemory")
     hiddenToMemory = hp.Boolean("hiddenToMemory")
-    inputToCell = hp.Boolean("inputToCell")
+    inputToHiddenCell = hp.Boolean("inputToCell")
     useBias = hp.Boolean("useBias")
     return ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hiddenCell,
-                         memoryToMemory, hiddenToMemory, inputToCell, useBias)
+                         memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias)
 
 def ModelLRMU_P():
     return ModelLRMU(15, 64, 1050, 0.8, True, None, True, False, True, False)
@@ -99,7 +99,8 @@ def ModelLRMU_P():
 def FullTraining(training, validation, test):
         history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 10)
 
-        PrintAccuracy(result)
+        print('Test loss:', result[0])
+        print('Test accuracy:', result[1])
         PlotModelAccuracy(history, "Model LRMU",f"./plots/{PROBLEM_NAME}", f"{PROBLEM_NAME}_LRMU_ESN")
 
 
