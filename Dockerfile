@@ -24,4 +24,4 @@ RUN python -m pip install --upgrade pip setuptools wheel
 
 ADD . .
 RUN python -m pip install -r requirements.txt
-CMD ["python", "Main.py"]
+CMD ["python", "Main.py","1"]

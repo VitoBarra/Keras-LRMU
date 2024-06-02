@@ -11,7 +11,7 @@ from Utility.PlotUtil import *
 from Utility.Debug import *
 import tensorflow.keras as ks
 
-from Utility.ModelUtil import TrainAndTestModel_OBJ
+from Utility.ModelUtil import *
 
 PROBLEM_NAME = "pmMNIST"
 
@@ -34,10 +34,10 @@ def ModelLRMU(memoryDim, order, hiddenUnit, spectraRadius, reservoirMode, hidden
 
 
 def ModelLRMUWhitTuning(hp):
-    memoryDim = 1
-    order = 256
-    hiddenUnit = 212
-    spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.025)
+    memoryDim = hp.Choice("memoryDim", values=[1,2,4,8])
+    order = hp.Int("order", min_value=128, max_value=512, step=32)
+    hiddenUnit = hp.Int("HiddenUnit", min_value=64, max_value=512, step=64)
+    spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
     reservoirMode = True
     hiddenCell = None
     memoryToMemory = False
@@ -55,39 +55,17 @@ def ModelLRMUWhitTuning(hp):
 # 256, 128, 212, 0.99,True, None, False, True, False, True = 87.4% accuracy on test set
 # 256, 256, 212, 0.99,True, None, False, True, False, True = 88.3% accuracy on test set
 # 256, 256, 212, 1.18,True, None, False, True, False, True = 88.55%  accuracy on test set
-def ModelLRMU_P():
+def ModelLRMU_SelectedHP():
     return ModelLRMU(1, 256, 212, 1.18,
                      True, None, False, True, False, False, 0)
 
 
 def FullTraining(training, validation, test):
-        history, result = TrainAndTestModel_OBJ(ModelLRMU_P, training, validation, test, 64, 10)
+        history, result = TrainAndTestModel_OBJ(ModelLRMU_SelectedHP, training, validation, test, 64, 10)
 
         print(f"Test loss: {result[0]}")
         print(f"Test accuracy: {result[1]}")
         PlotModelAccuracy(history, "Model LRMU",f"./plots/{PROBLEM_NAME}", f"{PROBLEM_NAME}_LRMU_ESN")
-
-
-def TunerTraining(training, validation, test):
-    tuner = keras_tuner.GridSearch(
-        ModelLRMUWhitTuning,
-        project_name=f"{PROBLEM_NAME}",
-        executions_per_trial=1,
-        # Do not resume the previous search in the same directory.
-        overwrite=True,
-        objective="val_accuracy",
-        # Set a directory to store the intermediate results.
-        directory=f"./logs/{PROBLEM_NAME}/tmp",
-    )
-
-    tuner.search(
-        training.Data,
-        training.Label,
-        validation_data=(validation.Data, validation.Label),
-        epochs=2,
-        # Use the TensorBoard callback.
-        callbacks=[ks.callbacks.TensorBoard(f"./logs/{PROBLEM_NAME}2")],
-    )
 
 
 def Run(fullTraining = True):
@@ -106,5 +84,5 @@ def Run(fullTraining = True):
     if fullTraining:
         FullTraining(training, validation, test)
     else:
-        TunerTraining(training, validation, test)
+        TunerTraining(ModelLRMUWhitTuning, "LRMU_ESN_tuning", PROBLEM_NAME, training, validation, False)
 

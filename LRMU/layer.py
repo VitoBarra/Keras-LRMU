@@ -19,7 +19,7 @@ else:
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMUCell(keras.layers.Layer):
     def __init__(self, memoryDimension, order, theta,
-                 hiddenUnit=0, spectraRadius=0.99,
+                 hiddenUnit=0, spectraRadius=0.99, leaky=1.0,
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False,
                  useBias=False, seed=0, **kwargs):
@@ -27,7 +27,9 @@ class LRMUCell(keras.layers.Layer):
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
+        self.HiddenUnit = hiddenUnit
         self.SpectraRadius = spectraRadius
+        self.Leaky = leaky
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
         self.InputToHiddenCell = inputToHiddenCell
@@ -38,7 +40,6 @@ class LRMUCell(keras.layers.Layer):
 
         self.RecurrentMemoryKernel = None
         self.MemoryKernel = None
-        self.HiddenUnit = hiddenUnit
 
         self.Bias = None
 
@@ -46,7 +47,7 @@ class LRMUCell(keras.layers.Layer):
         self.B = None
 
         if self.HiddenCell is None and self.HiddenUnit != 0:
-            self.HiddenCell = ReservoirCell(self.HiddenUnit, spectral_radius=self.SpectraRadius)
+            self.HiddenCell = ReservoirCell(self.HiddenUnit, spectral_radius=self.SpectraRadius , leaky=self.Leaky)
 
         if self.HiddenCell is None:
             if self.HiddenToMemory:
@@ -189,7 +190,7 @@ class LRMUCell(keras.layers.Layer):
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMU(keras.layers.Layer):
 
-    def __init__(self, memoryDimension, order, theta, hiddenUnit=0, spectraRadius=0.99,
+    def __init__(self, memoryDimension, order, theta, hiddenUnit=0, spectraRadius=0.99, leaky=1.0,
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False,
                  useBias=False, seed=0, returnSequences=False, **kwargs):
@@ -198,6 +199,7 @@ class LRMU(keras.layers.Layer):
         self.Order = order
         self.Theta = theta
         self.HiddenUnit = hiddenUnit
+        self.Leaky = leaky
         self.SpectraRadius = spectraRadius
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
@@ -214,7 +216,7 @@ class LRMU(keras.layers.Layer):
         super().build(input_shape)
 
         self.layer = keras.layers.RNN(
-            LRMUCell(self.MemoryDim, self.Order, self.Theta, self.HiddenUnit, self.SpectraRadius,
+            LRMUCell(self.MemoryDim, self.Order, self.Theta, self.HiddenUnit, self.SpectraRadius, self.Leaky,
                      self.ReservoirMode, self.HiddenCell,
                      self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell,
                      self.UseBias, self.Seed), return_sequences=self.ReturnSequence)
@@ -233,6 +235,7 @@ class LRMU(keras.layers.Layer):
             "order": self.Order,
             "theta": self.Theta,
             "hiddenUnit": self.HiddenUnit,
+            "leaky": self.Leaky,
             "spectraRadius": self.SpectraRadius,
             "reservoirMode": self.ReservoirMode,
             "hiddenCell": keras.layers.serialize(self.HiddenCell),
