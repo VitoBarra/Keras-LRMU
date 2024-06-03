@@ -27,7 +27,8 @@ class ReservoirCell(keras.layers.Layer):
 
         tf.random.set_seed(self.seed)
         self.recurrent_kernel = self.add_weight(shape=(self.units, self.units),
-                                                initializer=FastReccurrentSR(self.spectral_radius, self.units, self.seed),
+                                                initializer=FastReccurrentSR(self.spectral_radius, self.units,
+                                                                             self.seed),
                                                 trainable=False)
 
         self.kernel = self.add_weight(shape=(input_shape[-1], self.units),
@@ -48,9 +49,9 @@ class ReservoirCell(keras.layers.Layer):
         input_part = tf.matmul(inputs, self.kernel)
         state_part = tf.matmul(prev_output, self.recurrent_kernel)
 
-        if self.activation != None:
-            output = prev_output * (1 - self.leaky) + self.activation(input_part + self.bias + state_part) * self.leaky
+        if self.activation is not None:
+            output = prev_output * (1 - self.leaky) + self.leaky * self.activation(input_part + self.bias + state_part)
         else:
-            output = prev_output * (1 - self.leaky) + (input_part + self.bias + state_part) * self.leaky
+            output = prev_output * (1 - self.leaky) + self.leaky * (input_part + self.bias + state_part)
 
         return output, [output]
