@@ -46,7 +46,7 @@ def ModelLRMU_ESN_Tuning(hp):
     order = hp.Choice("order", [4, 8, 16, 32, 64])
     theta = hp.Int("theta", 16, 256, 16)
 
-    hiddenUnit = hp.Int("hiddenUnit", 128, 256, 64)
+    hiddenUnit = hp.Int("hiddenUnit", 256, 512, 64)
     spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
     leaky = hp.Float("leaky", 0.5, 1, 0.05)
 
@@ -74,7 +74,7 @@ def ModelLRMU_SimpleRNN_Tuning(hp):
     order = hp.Int("order", min_value=4, max_value=64, step=4)
     theta = hp.Int("theta", 4, 128, 4)
 
-    hiddenUnit = hp.Int("hiddenUnit", min_value=32, max_value=256, step=32)
+    hiddenUnit = hp.Int("hiddenUnit", 256, 480, 32)
     spectraRadius = None
     leaky = None
 
@@ -100,7 +100,7 @@ def ModelLRMU_ESN_stack_Tuning(hp):
     order = hp.Choice("order", [4, 8, 16, 32, 64])
     theta = hp.Int("theta", 16, 256, 16)
 
-    hiddenUnit = hp.Int("hiddenUnit", 128, 256, 64)
+    hiddenUnit = hp.Int("hiddenUnit", 256, 512, 64)
     spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
     leaky = hp.Float("leaky", 0.5, 1, 0.05)
 
@@ -127,7 +127,7 @@ def ModelLRMU_SimpleRNN_stack_Tuning(hp):
     order = hp.Int("order", min_value=4, max_value=64, step=4)
     theta = hp.Int("theta", 4, 128, 4)
 
-    hiddenUnit = hp.Int("hiddenUnit", min_value=32, max_value=256, step=32)
+    hiddenUnit = hp.Int("hiddenUnit", 256, 512, 64)
     spectraRadius = None
     leaky = None
 
@@ -151,10 +151,15 @@ def ModelLRMU_SelectedHP():
     #                  416, 1.05, 1,
     #                  True, None,
     #                  False, True, False, False, 0)
-    return ModelLRMU(2, 4, 160,
-                     384, 1.05, 0.6,
-                     True, None,
-                     False, True, False, False, 0)
+    # return ModelLRMU(2, 4, 160,
+    #                  384, 1.05, 0.6,
+    #                  True, None,
+    #                  False, True, False, False, 0)
+    return ModelLRMU(2,4,160,
+                     450,1.05,0.6,
+                     True,None,False,
+                     True,False,False,
+                     0,1)
 
 
 def SingleTraining(training, validation, test):
@@ -173,7 +178,7 @@ def Run(singleTraining=True):
     if singleTraining:
         SingleTraining(training, validation, test)
     else:
-        TunerTraining(ModelLRMU_ESN_Tuning, "LRMU_ESN_Tuning", PROBLEM_NAME, training, validation, 10, 100, False)
+        #TunerTraining(ModelLRMU_ESN_Tuning, "LRMU_ESN_Tuning", PROBLEM_NAME, training, validation, 10, 100, False)
         TunerTraining(ModelLRMU_SimpleRNN_Tuning, "LRMU_RNN_Tuning", PROBLEM_NAME, training, validation, 10, 100, False)
         TunerTraining(ModelLRMU_ESN_stack_Tuning, "LRMU_ESN_Stack_Tuning", PROBLEM_NAME, training, validation, 10, 100, False)
         TunerTraining(ModelLRMU_SimpleRNN_stack_Tuning, "LRMU_RNN_Stack_Tuning", PROBLEM_NAME, training, validation, 10, 100, False)
