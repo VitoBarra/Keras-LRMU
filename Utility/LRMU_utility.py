@@ -1,22 +1,22 @@
 from LRMU import LRMU
-import keras_tuner
 import tensorflow.keras as ks
+from keras.initializers import *
 
 def GenerateLRMUFeatureLayer(inputs,
-                             memoryDim, order, theta, hiddenUnit, trainableAB,
-                             spectraRadius, leaky,
+                             memoryDim, order, theta,
+                             hiddenUnit,spectraRadius, leaky,
                              reservoirMode, hiddenCell,
                              memoryToMemory, hiddenToMemory, inputToCell, useBias,
                              memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
                              seed, layerN=1):
-    feature = LRMU(memoryDim, order,theta,trainableAB,
-                        hiddenUnit,spectraRadius,leaky,
-                        reservoirMode,hiddenCell,
-                        memoryToMemory,hiddenToMemory, inputToCell,useBias,
-                        memoryToMemoryScaler, hiddenToMemoryScaler,inputToHiddenCellScaler, biasScaler,
-                        seed, returnSequences=layerN > 1)(inputs)
+    feature = LRMU(memoryDim, order,theta,
+                   hiddenUnit,spectraRadius,leaky,
+                   reservoirMode,hiddenCell,
+                   memoryToMemory,hiddenToMemory, inputToCell,useBias,
+                   memoryToMemoryScaler, hiddenToMemoryScaler,inputToHiddenCellScaler, biasScaler,
+                   seed, returnSequences=layerN > 1)(inputs)
     for i in range(layerN - 1):
-        feature = LRMU(memoryDim, order,theta,trainableAB,
+        feature = LRMU(memoryDim, order,theta,
                        hiddenUnit,spectraRadius,leaky,
                        reservoirMode, hiddenCell,
                        memoryToMemory,hiddenToMemory, inputToCell,useBias,
@@ -26,21 +26,21 @@ def GenerateLRMUFeatureLayer(inputs,
 
 
 def Model_LRMU_Classification(PROBLEM_NAME, model_type, SEQUENCE_LENGHT, CLASS_NUMBER,
-                              memoryDim, order, theta, hiddenUnit, trainableAB,
+                              memoryDim, order, theta, hiddenUnit,
                               spectraRadius, leaky,
                               reservoirMode, hiddenCell,
                               memoryToMemory, hiddenToMemory, inputToCell, useBias,
                               memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
                               seed, layerN):
     inputs = ks.Input(shape=(SEQUENCE_LENGHT, 1), name=f"{model_type}_Input")
-    feature = feature = GenerateLRMUFeatureLayer(inputs,
-                                                 memoryDim, order, theta, trainableAB,
+    feature = GenerateLRMUFeatureLayer(inputs,
+                                                 memoryDim, order, theta,
                                                  hiddenUnit, spectraRadius, leaky,
                                                  reservoirMode, hiddenCell,
                                                  memoryToMemory, hiddenToMemory, inputToCell, useBias,
                                                  memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
                                                  seed, layerN)
-    outputs = ks.layers.Dense(CLASS_NUMBER, activation="softmax", kernel_initializer=ks.initializers.GlorotUniform(seed))(feature)
+    outputs = ks.layers.Dense(CLASS_NUMBER, activation="softmax", kernel_initializer=GlorotUniform(seed))(feature)
 
     model = ks.Model(inputs=inputs, outputs=outputs, name=f"{PROBLEM_NAME}_{model_type}_Model")
     model.summary()
@@ -51,22 +51,22 @@ def Model_LRMU_Classification(PROBLEM_NAME, model_type, SEQUENCE_LENGHT, CLASS_N
 
 
 def Model_LRMU_Prediction(PROBLEM_NAME, model_type, SEQUENCE_LENGHT,
-                          memoryDim, order, theta, hiddenUnit, trainableAB,
+                          memoryDim, order, theta, hiddenUnit,
                           spectraRadius, leaky,
                           reservoirMode, hiddenCell,
                           memoryToMemory, hiddenToMemory, inputToCell, useBias,
                           memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
                           seed, layerN):
     inputs = ks.Input(shape=(SEQUENCE_LENGHT, 1), name=f"{model_type}_Input")
-    feature = feature = GenerateLRMUFeatureLayer(inputs,
-                                                 memoryDim, order, theta, trainableAB,
+    feature = GenerateLRMUFeatureLayer(inputs,
+                                                 memoryDim, order, theta,
                                                  hiddenUnit, spectraRadius, leaky,
                                                  reservoirMode, hiddenCell,
                                                  memoryToMemory, hiddenToMemory, inputToCell, useBias,
                                                  memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
                                                  seed, layerN)
 
-    outputs = ks.layers.Dense(1, activation="linear", kernel_initializer=ks.initializers.GlorotUniform(seed))(feature)
+    outputs = ks.layers.Dense(1, activation="linear", kernel_initializer=GlorotUniform(seed))(feature)
 
     model = ks.Model(inputs=inputs, outputs=outputs, name=f"{PROBLEM_NAME}_{model_type}_Model")
     model.summary()

@@ -11,147 +11,89 @@ PROBLEM_NAME = "psMNIST"
 CLASS_NUMBER = 10
 SEQUENCE_LENGTH = 784
 
+def SelectCell(hp, ESN, hiddenUnit, seed):
+    if ESN:
+        hiddenCell = None
+        spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
+        leaky = 1  # task step invariant so no need to change this parameter
+    else:
+        hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(seed))
+        spectraRadius = -1
+        leaky = -1
+    return hiddenCell, spectraRadius, leaky
 
-def Model_LMU_AB_Tuning(hp):
+
+def LMU_Par(hp, useESN):
     seed = 0
     layerN = 1
     memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32, 48, 64])
-    order = hp.Int("order", min_value=128, max_value=512, step=32)
-    theta = SEQUENCE_LENGTH
+    order = hp.Choice("memoryDim", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
+    theta = hp.Int("theta", min_value=16, max_value=258, step=16)
+    hiddenUnit = hp.Int("hiddenUnit", min_value=32, max_value=32 * 15, step=32)
+    return seed, layerN, memoryDim, order, theta, hiddenUnit, SelectCell(hp, useESN, hiddenUnit, seed)
 
-    stepSize = 32
-    hiddenUnit = hp.Int("hiddenUnit", min_value=stepSize, max_value=stepSize * 16, step=stepSize)
-    spectraRadius = -1
-    leaky = -1  # task step invariant so no need to change this parameter
-    trainableAB = True
 
-    reservoirMode = False
-    hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(seed),
-                                         recurrent_initializer=GlorotUniform(seed))
-
-    memoryToMemory = hp.Boolean("memoryToMemory")
-    hiddenToMemory = hp.Boolean("hiddenToMemory")
-    inputToHiddenCell = hp.Boolean("inputToHiddenCell")
-    useBias = hp.Boolean("useBias")
-
+def SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias):
     memoryToMemoryScaler = -1
     hiddenToMemoryScaler = -1
     inputToHiddenCellScaler = -1
     biasScaler = -1
+    if reservoirMode:
+        if memoryToMemory:
+            memoryToMemoryScaler = hp.Float("memoryToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
+        if hiddenToMemory:
+            hiddenToMemoryScaler = hp.Float("hiddenToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
+        if inputToHiddenCell:
+            inputToHiddenCellScaler = hp.Float("inputToHiddenCellScaler", min_value=0.5, max_value=2, step=0.25)
+        if useBias:
+            biasScaler = hp.Float("biasScaler", min_value=0.5, max_value=2, step=0.25)
 
-    return Model_LRMU_Classification(PROBLEM_NAME, "LMU-AB", SEQUENCE_LENGTH, CLASS_NUMBER,
-                                     memoryDim, order, theta, trainableAB,
-                                     hiddenUnit, spectraRadius, leaky,
-                                     reservoirMode, hiddenCell,
-                                     memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
-                                     memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
-                                     seed, layerN)
-
-
-def Model_LMU_ESN_Tuning(hp):
-    seed = 0
-    layerN = 1
-    memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32, 48, 64])
-    order = hp.Int("order", min_value=128, max_value=512, step=32)
-    theta = SEQUENCE_LENGTH
-
-    stepSize = 32
-    hiddenUnit = hp.Int("hiddenUnit", min_value=stepSize, max_value=stepSize * 16, step=stepSize)
-    spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
-    leaky = 1  # task step invariant so no need to change this parameter
-    trainableAB = False
-
-    hiddenCell = None
-
-    memoryToMemory = hp.Boolean("memoryToMemory")
-    hiddenToMemory = hp.Boolean("hiddenToMemory")
-    inputToHiddenCell = hp.Boolean("inputToHiddenCell")
-    useBias = hp.Boolean("useBias")
-
-    reservoirMode = False
-    memoryToMemoryScaler = -1
-    hiddenToMemoryScaler = -1
-    inputToHiddenCellScaler = -1
-    biasScaler = -1
-
-    return Model_LRMU_Classification(PROBLEM_NAME, "LMU_ESN", SEQUENCE_LENGTH, CLASS_NUMBER,
-                                     memoryDim, order, theta, trainableAB,
-                                     hiddenUnit, spectraRadius, leaky,
-                                     reservoirMode, hiddenCell,
-                                     memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
-                                     memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
-                                     seed, layerN)
+    return memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler
 
 
-
-def Model_LMU_RE_Tuning(hp):
-    seed = 0
-    layerN = 1
-    memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32, 48, 64])
-    order = hp.Int("order", min_value=128, max_value=512, step=32)
-    theta = SEQUENCE_LENGTH
-
-    hidden_unit_stepSize = 32
-    hiddenUnit = hp.Int("hiddenUnit", min_value=hidden_unit_stepSize, max_value=hidden_unit_stepSize * 16, step=hidden_unit_stepSize)
-    spectraRadius = -1
-    leaky = -1  # task step invariant so no need to change this parameter
-    trainableAB = False
-
-    reservoirMode = True
-    hiddenCell = None
-
-    memoryToMemory = hp.Boolean("memoryToMemory")
-    hiddenToMemory = hp.Boolean("hiddenToMemory")
-    inputToHiddenCell = hp.Boolean("inputToHiddenCell")
-    useBias = hp.Boolean("useBias")
-
-    memoryToMemoryScaler = hp.Float("memoryToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
-    hiddenToMemoryScaler = hp.Float("hiddenToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
-    inputToHiddenCellScaler = hp.Float("inputToHiddenCellScaler", min_value=0.5, max_value=2, step=0.25)
-    biasScaler = hp.Float("biasScaler", min_value=0.5, max_value=2, step=0.25)
-
-    return Model_LRMU_Classification(PROBLEM_NAME, "LMU-RE", SEQUENCE_LENGTH, CLASS_NUMBER,
-                                     memoryDim, order, theta, trainableAB,
-                                     hiddenUnit, spectraRadius, leaky,
-                                     reservoirMode, hiddenCell,
-                                     memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
-                                     memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
-                                     seed, layerN)
-
-def Model_LRMU_Tuning(hp):
-    seed = 0
-    layerN = 1
-    memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32, 48, 64])
-    order = hp.Int("order", min_value=128, max_value=512, step=32)
-    theta = SEQUENCE_LENGTH
-
-    hidden_unit_stepSize = 32
-    hiddenUnit = hp.Int("hiddenUnit", min_value=hidden_unit_stepSize, max_value=hidden_unit_stepSize * 16, step=hidden_unit_stepSize)
-    spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
-    leaky = 1  # task step invariant so no need to change this parameter
-    trainableAB = False
-
-    reservoirMode = True
-    hiddenCell = None
-
-    memoryToMemory = hp.Boolean("memoryToMemory")
-    hiddenToMemory = hp.Boolean("hiddenToMemory")
-    inputToHiddenCell = hp.Boolean("inputToHiddenCell")
-    useBias = hp.Boolean("useBias")
+def SelectConnection(hp, searchConnection, reservoirMode):
+    if searchConnection:
+        memoryToMemory = hp.Boolean("memoryToMemory")
+        hiddenToMemory = hp.Boolean("hiddenToMemory")
+        inputToHiddenCell = hp.Boolean("inputToHiddenCell")
+        useBias = hp.Boolean("useBias")
+    else:
+        memoryToMemory = False
+        hiddenToMemory = True
+        inputToHiddenCell = False
+        useBias = False
+    return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, SelectScaler(hp, reservoirMode, memoryToMemory,
+                                                                                    hiddenToMemory, inputToHiddenCell,
+                                                                                    useBias)
 
 
-    memoryToMemoryScaler = hp.Float("memoryToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
-    hiddenToMemoryScaler = hp.Float("hiddenToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
-    inputToHiddenCellScaler = hp.Float("inputToHiddenCellScaler", min_value=0.5, max_value=2, step=0.25)
-    biasScaler = hp.Float("biasScaler", min_value=0.5, max_value=2, step=0.25)
+def ConstructHyperModel(hp, modelName, useESN, reservoirMode, searchConnection):
+    seed, layerN, memoryDim, order, theta, hiddenUnit, cellData = LMU_Par(hp, useESN)
+    (hiddenCell, spectraRadius, leaky) = cellData
 
-    return Model_LRMU_Classification(PROBLEM_NAME, "LRMU", SEQUENCE_LENGTH, CLASS_NUMBER,
-                                 memoryDim, order, theta, trainableAB,
+    memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = SelectConnection(hp, searchConnection,
+                                                                                          reservoirMode)
+    (memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler) = scaler
+
+    return Model_LRMU_Classification(PROBLEM_NAME, modelName, SEQUENCE_LENGTH,CLASS_NUMBER,
+                                 memoryDim, order, theta,
                                  hiddenUnit, spectraRadius, leaky,
                                  reservoirMode, hiddenCell,
                                  memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
                                  memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
                                  seed, layerN)
+
+
+def Model_LMU_ESN_Tuning(hp):
+    return ConstructHyperModel(hp, "LMU-ESN", True, False, True)
+
+
+def Model_LMU_RE_Tuning(hp):
+    return ConstructHyperModel(hp, "LMU-RE", False, True, True)
+
+
+def Model_LRMU_Tuning(hp):
+    return ConstructHyperModel(hp, "LRMU", True, True, True)
 
 
 # 75, 352, 500, 1.15,True, None, False, True, False, True = 92.22% accuracy on test set xavierInitializer

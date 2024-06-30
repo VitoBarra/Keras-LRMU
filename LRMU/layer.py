@@ -18,7 +18,7 @@ else:
 
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMUCell(keras.layers.Layer):
-    def __init__(self, memoryDimension, order, theta, trainableABMatrix = False,
+    def __init__(self, memoryDimension, order, theta,
                  hiddenUnit=0, spectraRadius=0.99, leaky=1.0,
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
@@ -28,7 +28,6 @@ class LRMUCell(keras.layers.Layer):
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
-        self.TrainableABMatrix = trainableABMatrix
         self.HiddenUnit = hiddenUnit
         self.SpectraRadius = spectraRadius
         self.Leaky = leaky
@@ -74,8 +73,8 @@ class LRMUCell(keras.layers.Layer):
 
     def createWeight(self, shape, inizializer="glorot_uniform",scaler=1.0):
         if self.ReservoirMode:
-            #initializer = keras.initializers.RandomUniform(-scaler, scaler, seed=self.Seed)
-            initializer = keras.initializers.GlorotUniform( seed=self.Seed)
+            initializer = keras.initializers.RandomUniform(minval=-scaler,maxval= scaler, seed=self.Seed)
+            #initializer = keras.initializers.GlorotUniform( seed=self.Seed)
             return self.add_weight(shape=shape, initializer=initializer, trainable=False)
         else:
             return self.add_weight(shape=shape, initializer=inizializer)
@@ -95,8 +94,6 @@ class LRMUCell(keras.layers.Layer):
 
         self.MemoryKernel = input_encoder if hidden_encoder is None else tf.concat([input_encoder, hidden_encoder], axis=0)
 
-        kernel_Dim = inputDim + outDim if self.HiddenToMemory else inputDim
-        self.MemoryKernel = self.createWeight(shape=(kernel_Dim, self.MemoryDim),scaler=self.InputToHiddenCellScaler)
 
 
         if self.MemoryToMemory:
@@ -130,10 +127,6 @@ class LRMUCell(keras.layers.Layer):
 
         self.A, self.B = M._cont2discrete_zoh(self._base_A / self.Theta, self._base_B / self.Theta)
 
-        if self.TrainableABMatrix:
-            # Initialize trainable variables
-            self.A = tf.Variable(self.A, trainable=True, dtype=self.dtype)
-            self.B = tf.Variable(self.B, trainable=True, dtype=self.dtype)
 
     def call(self, inputs, states, training=False):
         states_fat = tf.nest.flatten(states)
@@ -180,7 +173,6 @@ class LRMUCell(keras.layers.Layer):
                 "memoryDimension": self.MemoryDim,
                 "order": self.Order,
                 "theta": self.Theta,
-                "trainableAB": self.TrainableABMatrix,
                 "hiddenUnit": self.HiddenUnit,
                 "spectraRadius": self.SpectraRadius,
                 "reservoirMode": self.ReservoirMode,
@@ -213,7 +205,7 @@ class LRMUCell(keras.layers.Layer):
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMU(keras.layers.Layer):
 
-    def __init__(self, memoryDimension, order, theta, trainableAB = False,
+    def __init__(self, memoryDimension, order, theta,
                  hiddenUnit=0, spectraRadius=0.99, leaky=1.0,
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
@@ -223,7 +215,6 @@ class LRMU(keras.layers.Layer):
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
-        self.TrainableABMatrix = trainableAB
         self.HiddenUnit = hiddenUnit
         self.Leaky = leaky
         self.SpectraRadius = spectraRadius
@@ -250,7 +241,7 @@ class LRMU(keras.layers.Layer):
         super().build(input_shape)
 
         self.layer = keras.layers.RNN(
-            LRMUCell(self.MemoryDim, self.Order, self.Theta, self.TrainableABMatrix,
+            LRMUCell(self.MemoryDim, self.Order, self.Theta,
                      self.HiddenUnit, self.SpectraRadius, self.Leaky,
                      self.ReservoirMode, self.HiddenCell,
                      self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell,
@@ -269,7 +260,6 @@ class LRMU(keras.layers.Layer):
             "memoryDimension": self.MemoryDim,
             "order": self.Order,
             "theta": self.Theta,
-            "trainableAB": self.TrainableABMatrix,
             "hiddenUnit": self.HiddenUnit,
             "leaky": self.Leaky,
             "spectraRadius": self.SpectraRadius,
