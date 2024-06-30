@@ -18,8 +18,8 @@ def SelectCell(hp, ESN, hiddenUnit, seed):
         leaky = 1  # task step invariant so no need to change this parameter
     else:
         hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(seed))
-        spectraRadius = -1
-        leaky = -1
+        spectraRadius = None
+        leaky = None
     return hiddenCell, spectraRadius, leaky
 
 
@@ -27,17 +27,17 @@ def LMU_Par(hp, useESN):
     seed = 0
     layerN = 1
     memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32, 48, 64])
-    order = hp.Choice("memoryDim", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
+    order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
     theta = hp.Int("theta", min_value=16, max_value=258, step=16)
-    hiddenUnit = hp.Int("hiddenUnit", min_value=32, max_value=32 * 15, step=32)
+    hiddenUnit = hp.Int("hiddenUnit", min_value=16, max_value=16 * 20, step=16)
     return seed, layerN, memoryDim, order, theta, hiddenUnit, SelectCell(hp, useESN, hiddenUnit, seed)
 
 
 def SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias):
-    memoryToMemoryScaler = -1
-    hiddenToMemoryScaler = -1
-    inputToHiddenCellScaler = -1
-    biasScaler = -1
+    memoryToMemoryScaler = None
+    hiddenToMemoryScaler = None
+    inputToHiddenCellScaler = None
+    biasScaler = None
     if reservoirMode:
         if memoryToMemory:
             memoryToMemoryScaler = hp.Float("memoryToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
@@ -61,7 +61,7 @@ def SelectConnection(hp, searchConnection, reservoirMode):
         memoryToMemory = False
         hiddenToMemory = True
         inputToHiddenCell = False
-        useBias = False
+        useBias = True
     return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, SelectScaler(hp, reservoirMode, memoryToMemory,
                                                                                     hiddenToMemory, inputToHiddenCell,
                                                                                     useBias)
@@ -105,9 +105,9 @@ def Model_LRMU_Tuning(hp):
 def ModelLRMU_SelectedHP():
     return Model_LRMU_Classification(PROBLEM_NAME, "LRMU", SEQUENCE_LENGTH, 10,
                                      256, 212, 1.18, 1,
-                                     False, 1, 1, True, None,
-                                     True, False, False, False, True,
-                                     1, 1, 1, 1, 0)
+                                      1, 1, True, None,
+                                     True, False, False, False,
+                                     1,1, 1, 1, 1, 0)
 
 
 def SingleTraining(training, validation, test):

@@ -52,7 +52,7 @@ class LRMUCell(keras.layers.Layer):
         self.B = None
 
         if self.HiddenCell is None and self.HiddenUnit != 0:
-            self.HiddenCell = ReservoirCell(self.HiddenUnit, spectral_radius=self.SpectraRadius , leaky=self.Leaky)
+            self.HiddenCell = ReservoirCell(self.HiddenUnit, spectral_radius=self.SpectraRadius, leaky=self.Leaky)
 
         if self.HiddenCell is None:
             if self.HiddenToMemory:
@@ -71,13 +71,13 @@ class LRMUCell(keras.layers.Layer):
         self.state_size = [self.MemoryDim * self.Order] + tf.nest.flatten(self.HiddenStateSize)
         self.output_size = self.HiddenOutputSize
 
-    def createWeight(self, shape, inizializer="glorot_uniform",scaler=1.0):
+    def createWeight(self, shape, scaler=1.0):
         if self.ReservoirMode:
-            initializer = keras.initializers.RandomUniform(minval=-scaler,maxval= scaler, seed=self.Seed)
-            #initializer = keras.initializers.GlorotUniform( seed=self.Seed)
-            return self.add_weight(shape=shape, initializer=initializer, trainable=False)
+            initializer = keras.initializers.RandomUniform(minval=-scaler, maxval=scaler, seed=self.Seed)
         else:
-            return self.add_weight(shape=shape, initializer=inizializer)
+            initializer = keras.initializers.GlorotUniform(seed=self.Seed)
+
+        return self.add_weight(shape=shape, initializer=initializer, trainable=(not self.ReservoirMode))
 
     def build(self, input_shape):
         tf.random.set_seed(self.Seed)
@@ -86,21 +86,20 @@ class LRMUCell(keras.layers.Layer):
         inputDim = input_shape[-1]
         outDim = self.HiddenOutputSize
 
-
-        input_encoder = self.createWeight(shape=(inputDim, self.MemoryDim),scaler=self.InputToHiddenCellScaler)
+        input_encoder = self.createWeight(shape=(inputDim, self.MemoryDim), scaler=self.InputToHiddenCellScaler)
         hidden_encoder = None
         if self.HiddenToMemory:
-            hidden_encoder = self.createWeight(shape=(outDim, self.MemoryDim),scaler=self.HiddenToMemoryScaler)
+            hidden_encoder = self.createWeight(shape=(outDim, self.MemoryDim), scaler=self.HiddenToMemoryScaler)
 
-        self.MemoryKernel = input_encoder if hidden_encoder is None else tf.concat([input_encoder, hidden_encoder], axis=0)
-
-
+        self.MemoryKernel = input_encoder if hidden_encoder is None else tf.concat([input_encoder, hidden_encoder],
+                                                                                   axis=0)
 
         if self.MemoryToMemory:
-            self.RecurrentMemoryKernel = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim),scaler=self.MemoryToMemoryScaler)
+            self.RecurrentMemoryKernel = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim),
+                                                           scaler=self.MemoryToMemoryScaler)
 
         if self.UseBias:
-            self.Bias = self.createWeight(shape=(self.MemoryDim,),scaler=self.BiasScaler)
+            self.Bias = self.createWeight(shape=(self.MemoryDim,), scaler=self.BiasScaler)
 
         if self.HiddenCell is not None and not self.HiddenCell.built:
             hidden_input_d = self.MemoryDim * self.Order
@@ -126,7 +125,6 @@ class LRMUCell(keras.layers.Layer):
         self._base_B = tf.constant(B.T, dtype=self.dtype)
 
         self.A, self.B = M._cont2discrete_zoh(self._base_A / self.Theta, self._base_B / self.Theta)
-
 
     def call(self, inputs, states, training=False):
         states_fat = tf.nest.flatten(states)
@@ -181,10 +179,10 @@ class LRMUCell(keras.layers.Layer):
                 "hiddenToMemory": self.HiddenToMemory,
                 "inputToHiddenCell": self.InputToHiddenCell,
                 "useBias": self.UseBias,
-                "memoryToMemoryScaler":self.MemoryToMemoryScaler,
-                "hiddenToMemoryScaler":self.HiddenToMemoryScaler ,
-                "inputToHiddenCellScaler":self.InputToHiddenCellScaler,
-                "biasScaler":self.BiasScaler,
+                "memoryToMemoryScaler": self.MemoryToMemoryScaler,
+                "hiddenToMemoryScaler": self.HiddenToMemoryScaler,
+                "inputToHiddenCellScaler": self.InputToHiddenCellScaler,
+                "biasScaler": self.BiasScaler,
 
                 "seed": self.Seed})
 
@@ -233,8 +231,6 @@ class LRMU(keras.layers.Layer):
         self.Seed = seed
         self.ReturnSequence = returnSequences
 
-
-
         self.layer = None
 
     def build(self, input_shape):
@@ -244,8 +240,9 @@ class LRMU(keras.layers.Layer):
             LRMUCell(self.MemoryDim, self.Order, self.Theta,
                      self.HiddenUnit, self.SpectraRadius, self.Leaky,
                      self.ReservoirMode, self.HiddenCell,
-                     self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell,
-                     self.UseBias, self.Seed), return_sequences=self.ReturnSequence)
+                     self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell,self.UseBias,
+                     self.MemoryToMemoryScaler, self.HiddenToMemoryScaler, self.InputToHiddenCellScaler, self.BiasScaler,
+                     self.Seed), return_sequences=self.ReturnSequence)
 
         self.layer.build(input_shape)
 
@@ -269,11 +266,10 @@ class LRMU(keras.layers.Layer):
             "hiddenToMemory": self.HiddenToMemory,
             "inputToHiddenCell": self.InputToHiddenCell,
             "useBias": self.UseBias,
-            "memoryToMemoryScaler":self.MemoryToMemoryScaler,
-            "hiddenToMemoryScaler":self.HiddenToMemoryScaler ,
-            "inputToHiddenCellScaler":self.InputToHiddenCellScaler,
-            "biasScaler":self.BiasScaler,
-
+            "memoryToMemoryScaler": self.MemoryToMemoryScaler,
+            "hiddenToMemoryScaler": self.HiddenToMemoryScaler,
+            "inputToHiddenCellScaler": self.InputToHiddenCellScaler,
+            "biasScaler": self.BiasScaler,
 
             "seed": self.Seed,
             "returnSequences": self.ReturnSequence})
