@@ -21,7 +21,7 @@ RUN update-alternatives --install /usr/local/bin/python python /usr/bin/python${
 # Update pip: https://packaging.python.org/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date
 RUN python -m pip install --upgrade pip setuptools wheel
 
-
-ADD . .
+ADD requirements.txt .
 RUN python -m pip install -r requirements.txt
+ADD . .
 CMD ["python", "Main.py","1"]
