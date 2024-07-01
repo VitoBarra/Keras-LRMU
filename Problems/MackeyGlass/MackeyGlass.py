@@ -24,11 +24,13 @@ def SelectCell(hp, ESN, hiddenUnit, seed):
         hiddenCell = None
         spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
         leaky = 1  # task step invariant so no need to change this parameter
+        ESNinputScaler = hp.Float("ESNinputScaler", min_value=0.5, max_value=2, step=0.25)
     else:
         hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(seed))
         spectraRadius = None
         leaky = None
-    return hiddenCell, spectraRadius, leaky
+        ESNinputScaler = None
+    return hiddenCell, spectraRadius, leaky , ESNinputScaler
 
 
 def LMU_Par(hp, useESN):
@@ -73,7 +75,7 @@ def SelectConnection(hp, searchConnection, reservoirMode):
 
 def ConstructHyperModel(hp, modelName, useESN, reservoirMode, searchConnection):
     seed, layerN, memoryDim, order, theta, hiddenUnit, cellData = LMU_Par(hp, useESN)
-    (hiddenCell, spectraRadius, leaky) = cellData
+    (hiddenCell, spectraRadius, leaky,ESNInputScaler) = cellData
 
     memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = SelectConnection(hp, searchConnection,
                                                                                           reservoirMode)
@@ -81,7 +83,7 @@ def ConstructHyperModel(hp, modelName, useESN, reservoirMode, searchConnection):
 
     return Model_LRMU_Prediction(PROBLEM_NAME, modelName, SEQUENCE_LENGTH,
                                  memoryDim, order, theta,
-                                 hiddenUnit, spectraRadius, leaky,
+                                 hiddenUnit, spectraRadius, leaky, ESNInputScaler,
                                  reservoirMode, hiddenCell,
                                  memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
                                  memoryToMemoryScaler, hiddenToMemoryScaler, InputToMemoryScaler, biasScaler,
