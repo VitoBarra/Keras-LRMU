@@ -26,29 +26,27 @@ def SelectCell(hp, ESN, hiddenUnit, seed):
 def LMU_Par(hp, useESN):
     seed = 0
     layerN = 1
-    memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32, 48, 64])
+    memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32])
     order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
     theta = hp.Int("theta", min_value=16, max_value=258, step=16)
     hiddenUnit = hp.Int("hiddenUnit", min_value=16, max_value=16 * 20, step=16)
     return seed, layerN, memoryDim, order, theta, hiddenUnit, SelectCell(hp, useESN, hiddenUnit, seed)
 
 
-def SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias):
+def SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, useBias):
+    InputToMemoryScaler = hp.Float("InputToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
     memoryToMemoryScaler = None
     hiddenToMemoryScaler = None
-    inputToHiddenCellScaler = None
     biasScaler = None
     if reservoirMode:
         if memoryToMemory:
             memoryToMemoryScaler = hp.Float("memoryToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
         if hiddenToMemory:
             hiddenToMemoryScaler = hp.Float("hiddenToMemoryScaler", min_value=0.5, max_value=2, step=0.25)
-        if inputToHiddenCell:
-            inputToHiddenCellScaler = hp.Float("inputToHiddenCellScaler", min_value=0.5, max_value=2, step=0.25)
         if useBias:
             biasScaler = hp.Float("biasScaler", min_value=0.5, max_value=2, step=0.25)
 
-    return memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler
+    return memoryToMemoryScaler, hiddenToMemoryScaler, InputToMemoryScaler, biasScaler
 
 
 def SelectConnection(hp, searchConnection, reservoirMode):
@@ -62,9 +60,7 @@ def SelectConnection(hp, searchConnection, reservoirMode):
         hiddenToMemory = True
         inputToHiddenCell = False
         useBias = True
-    return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, SelectScaler(hp, reservoirMode, memoryToMemory,
-                                                                                    hiddenToMemory, inputToHiddenCell,
-                                                                                    useBias)
+    return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, useBias)
 
 
 def ConstructHyperModel(hp, modelName, useESN, reservoirMode, searchConnection):
@@ -73,14 +69,14 @@ def ConstructHyperModel(hp, modelName, useESN, reservoirMode, searchConnection):
 
     memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = SelectConnection(hp, searchConnection,
                                                                                           reservoirMode)
-    (memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler) = scaler
+    (memoryToMemoryScaler, hiddenToMemoryScaler, InputToMemoryScaler, biasScaler) = scaler
 
-    return Model_LRMU_Classification(PROBLEM_NAME, modelName, SEQUENCE_LENGTH,CLASS_NUMBER,
+    return Model_LRMU_Prediction(PROBLEM_NAME, modelName, SEQUENCE_LENGTH,
                                  memoryDim, order, theta,
                                  hiddenUnit, spectraRadius, leaky,
                                  reservoirMode, hiddenCell,
                                  memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
-                                 memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
+                                 memoryToMemoryScaler, hiddenToMemoryScaler, InputToMemoryScaler, biasScaler,
                                  seed, layerN)
 
 
