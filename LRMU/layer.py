@@ -1,9 +1,8 @@
 import keras.initializers
 from packaging import version
 from Utility import MathUtility as M
-from ESN.layer import *
-from ESN.Inizializer import *
-import math
+import tensorflow as tf
+import numpy as np
 
 tf_version = version.parse(tf.__version__)
 if tf_version < version.parse("2.8.0rc0"):
@@ -19,7 +18,6 @@ else:
 @tf.keras.utils.register_keras_serializable("keras-lrmu")
 class LRMUCell(keras.layers.Layer):
     def __init__(self, memoryDimension, order, theta,
-                 hiddenUnit=0, spectraRadius=0.99, leaky=1.0, ESNinputScaler=1.0,
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
                  memoryToMemoryScaler=1.0, hiddenToMemoryScaler=1.0, InputToMemoryScaler=1.0, biasScaler=1.0,
@@ -28,10 +26,6 @@ class LRMUCell(keras.layers.Layer):
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
-        self.HiddenUnit = hiddenUnit
-        self.SpectraRadius = spectraRadius
-        self.Leaky = leaky
-        self.ESNinputScaler = ESNinputScaler
 
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
@@ -55,9 +49,6 @@ class LRMUCell(keras.layers.Layer):
         self.A = None
         self.B = None
 
-        if self.HiddenCell is None and self.HiddenUnit != 0:
-            self.HiddenCell = ReservoirCell(self.HiddenUnit, spectral_radius=self.SpectraRadius, leaky=self.Leaky,
-                                            input_scaling=self.ESNinputScaler)
 
         if self.HiddenCell is None:
             if self.HiddenToMemory:
@@ -179,8 +170,6 @@ class LRMUCell(keras.layers.Layer):
                 "memoryDimension": self.MemoryDim,
                 "order": self.Order,
                 "theta": self.Theta,
-                "hiddenUnit": self.HiddenUnit,
-                "spectraRadius": self.SpectraRadius,
                 "reservoirMode": self.ReservoirMode,
                 "hiddenCell": keras.layers.serialize(self.HiddenCell),
                 "memoryToMemory": self.MemoryToMemory,
@@ -191,8 +180,6 @@ class LRMUCell(keras.layers.Layer):
                 "hiddenToMemoryScaler": self.HiddenToMemoryScaler,
                 "InputToMemoryScaler": self.InputToMemoryScaler,
                 "biasScaler": self.BiasScaler,
-                "ESNinpustScaler": self.ESNinputScaler,
-
                 "seed": self.Seed})
 
         return config
@@ -213,7 +200,6 @@ class LRMUCell(keras.layers.Layer):
 class LRMU(keras.layers.Layer):
 
     def __init__(self, memoryDimension, order, theta,
-                 hiddenUnit=0, spectraRadius=0.99, leaky=1.0, ESNinputScaler=1.0,
                  reservoirMode=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
                  memoryToMemoryScaler=1.0, hiddenToMemoryScaler=1.0, InputToMemoryScaler=1.0, biasScaler=1.0,
@@ -222,9 +208,6 @@ class LRMU(keras.layers.Layer):
         self.MemoryDim = memoryDimension
         self.Order = order
         self.Theta = theta
-        self.HiddenUnit = hiddenUnit
-        self.Leaky = leaky
-        self.SpectraRadius = spectraRadius
         self.MemoryToMemory = memoryToMemory
         self.HiddenToMemory = hiddenToMemory
         self.InputToHiddenCell = inputToHiddenCell
@@ -232,7 +215,6 @@ class LRMU(keras.layers.Layer):
         self.HiddenCell = hiddenCell
         self.ReservoirMode = reservoirMode
 
-        self.ESNinputScaler = ESNinputScaler
         self.MemoryToMemoryScaler = memoryToMemoryScaler
         self.HiddenToMemoryScaler = hiddenToMemoryScaler
         self.InputToMemoryScaler = InputToMemoryScaler
@@ -248,7 +230,6 @@ class LRMU(keras.layers.Layer):
 
         self.layer = keras.layers.RNN(
             LRMUCell(self.MemoryDim, self.Order, self.Theta,
-                     self.HiddenUnit, self.SpectraRadius, self.Leaky, self.ESNinputScaler,
                      self.ReservoirMode, self.HiddenCell,
                      self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell, self.UseBias,
                      self.MemoryToMemoryScaler, self.HiddenToMemoryScaler, self.InputToMemoryScaler, self.BiasScaler,
@@ -261,15 +242,11 @@ class LRMU(keras.layers.Layer):
 
     def get_config(self):
         """Return config of layer (for serialization during model saving/loading)."""
-
         config = super().get_config()
         config.update({
             "memoryDimension": self.MemoryDim,
             "order": self.Order,
             "theta": self.Theta,
-            "hiddenUnit": self.HiddenUnit,
-            "leaky": self.Leaky,
-            "spectraRadius": self.SpectraRadius,
             "reservoirMode": self.ReservoirMode,
             "hiddenCell": keras.layers.serialize(self.HiddenCell),
             "memoryToMemory": self.MemoryToMemory,
@@ -280,7 +257,6 @@ class LRMU(keras.layers.Layer):
             "hiddenToMemoryScaler": self.HiddenToMemoryScaler,
             "InputToMemoryScaler": self.InputToMemoryScaler,
             "biasScaler": self.BiasScaler,
-            "ESNinpustScaler": self.ESNinputScaler,
 
             "seed": self.Seed,
             "returnSequences": self.ReturnSequence})

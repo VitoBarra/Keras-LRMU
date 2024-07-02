@@ -55,3 +55,18 @@ class ReservoirCell(keras.layers.Layer):
             output = prev_output * (1 - self.leaky) + self.leaky * (input_part + self.bias + state_part)
 
         return output, [output]
+
+    def get_config(self):
+        """Return config of layer (for serialization during model saving/loading)."""
+
+        config = super().get_config()
+        config.update({
+            "units": self.units,
+            "inputScaling": self.InputScaling,
+            "biasScaling": self.BiasScaling,
+            "spectralRadius": self.SpectralRadius,
+            "leaky": self.Leaky,
+            "activation": self.Activation.__name__,
+            "seed": self.Seed})
+
+        return config

@@ -6,23 +6,22 @@ from Utility.DataUtil import SplitDataset
 from Utility.PlotUtil import *
 from Utility.LRMU_utility import *
 from Utility.ModelUtil import *
+from ESN.layer import *
+from ESN.Inizializer import *
 
 PROBLEM_NAME = "psMNIST"
 CLASS_NUMBER = 10
 SEQUENCE_LENGTH = 784
 
-def SelectCell(hp, ESN, hiddenUnit, seed):
-    if ESN:
-        hiddenCell = None
+def SelectCell(hp, UseESN, hiddenUnit, seed):
+    if UseESN:
         spectraRadius = hp.Float("spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
-        leaky = 1  # task step invariant so no need to change this parameter
-        ESNinputScaler = hp.Float("ESNinputScaler", min_value=0.5, max_value=2, step=0.25)
+        leaky = hp.Float("leaky", min_value=0.5, max_value=1, step=0.1)
+        inputScaler = 1
+        hiddenCell = ReservoirCell(hiddenUnit, spectral_radius=spectraRadius, leaky=leaky,input_scaling=inputScaler)
     else:
         hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(seed))
-        spectraRadius = None
-        leaky = None
-        ESNinputScaler = None
-    return hiddenCell, spectraRadius, leaky , ESNinputScaler
+    return hiddenCell
 
 
 def LMU_Par(hp, useESN):
@@ -32,7 +31,7 @@ def LMU_Par(hp, useESN):
     order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
     theta = hp.Int("theta", min_value=16, max_value=258, step=16)
     hiddenUnit = hp.Int("hiddenUnit", min_value=16, max_value=16 * 20, step=16)
-    return seed, layerN, memoryDim, order, theta, hiddenUnit, SelectCell(hp, useESN, hiddenUnit, seed)
+    return seed, layerN, memoryDim, order, theta, SelectCell(hp, useESN, hiddenUnit, seed)
 
 
 def SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, useBias):
@@ -65,16 +64,14 @@ def SelectConnection(hp, searchConnection, reservoirMode):
     return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, SelectScaler(hp, reservoirMode, memoryToMemory, hiddenToMemory, useBias)
 
 def ConstructHyperModel(hp, modelName, useESN, reservoirMode, searchConnection):
-    seed, layerN, memoryDim, order, theta, hiddenUnit, cellData = LMU_Par(hp, useESN)
-    (hiddenCell, spectraRadius, leaky,ESNInputScaler) = cellData
+    seed, layerN, memoryDim, order, theta, hiddenCell = LMU_Par(hp, useESN)
 
     memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = SelectConnection(hp, searchConnection,
                                                                                           reservoirMode)
     (memoryToMemoryScaler, hiddenToMemoryScaler, InputToMemoryScaler, biasScaler) = scaler
 
-    return Model_LRMU_Prediction(PROBLEM_NAME, modelName, SEQUENCE_LENGTH,
+    return Model_LRMU_Classification(PROBLEM_NAME, modelName, SEQUENCE_LENGTH,CLASS_NUMBER,
                                  memoryDim, order, theta,
-                                 hiddenUnit, spectraRadius, leaky, ESNInputScaler,
                                  reservoirMode, hiddenCell,
                                  memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
                                  memoryToMemoryScaler, hiddenToMemoryScaler, InputToMemoryScaler, biasScaler,
