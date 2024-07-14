@@ -123,6 +123,6 @@ def Run(singleTraining=True):
     if singleTraining:
         SingleTraining(training, validation, test)
     else:
-        TunerTraining(Model_LMU_ESN_Tuning, "LMU_ESN_Tuning_5k", PROBLEM_NAME, training, validation, 5, 150, True)
+        #TunerTraining(Model_LMU_ESN_Tuning, "LMU_ESN_Tuning_5k", PROBLEM_NAME, training, validation, 5, 150, False)
         TunerTraining(Model_LMU_RE_Tuning, "LMU_RE_Tuning_5k", PROBLEM_NAME, training, validation, 5, 150, True)
         TunerTraining(Model_LRMU_Tuning, "LRMU_Tuning_5k", PROBLEM_NAME, training, validation, 5, 150, True)

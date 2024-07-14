@@ -129,6 +129,6 @@ def Run(singleTraining=True):
         SingleTraining(training, validation, test)
     else:
         #TunerTraining(Model_LMU_AB_Tuning, "LRMU_LMU_AB_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150, False)
-        TunerTraining(Model_LMU_RE_Tuning, "LMU_RE_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150,True)
         TunerTraining(Model_LMU_ESN_Tuning, "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5,150,True)
+        TunerTraining(Model_LMU_RE_Tuning, "LMU_RE_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150,True)
         TunerTraining(Model_LRMU_Tuning, "LRMU_Tuning_15k", PROBLEM_NAME, training, validation,5, 150,True)

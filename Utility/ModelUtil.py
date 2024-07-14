@@ -42,10 +42,10 @@ def TunerTraining(hyperModel, testName, problemName, training, validation, epoch
         max_trials=maxTrial,
         project_name=f"{problemName}",
         executions_per_trial=1,
-        max_retries_per_trial=5,
+        max_retries_per_trial=3,
 
-        # Do not resume the previous search in the same directory.
-        overwrite=True,
+        # Do resume the previous search in the same directory.
+        overwrite=False,
         objective="val_loss",
         # Set a directory to store the intermediate results.
         directory=f"{problemName}/tmp",
@@ -59,10 +59,14 @@ def TunerTraining(hyperModel, testName, problemName, training, validation, epoch
             epochs=epochs,
             # Use the TensorBoard callback.
             callbacks=[ks.callbacks.TensorBoard(f"{testDir}")],
+
         )
         tuner.results_summary()
     except keras_tuner.errors.FatalError as e:
         print("serach failed")
+    except Exception as e:
+        print("serach failed")
+        print(e)
 
 
 

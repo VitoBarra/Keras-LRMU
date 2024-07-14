@@ -15,7 +15,7 @@ if __name__ == "__main__":
     #     selectedGPU = GPUSelection.pick_gpu_lowest_memory()
 
 
-    selectedGPU= "2"
+    selectedGPU= "3"
 
     print(selectedGPU)
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{selectedGPU}"
