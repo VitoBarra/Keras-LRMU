@@ -5,7 +5,7 @@ import Problems.MackeyGlass.DataGeneration as dg
 from ESN.layer import *
 from Utility.LRMUHyperModel import LRMUHyperModel
 from Utility.LRMUModelBuilder import LRMUModelBuilder
-from keras.layers import SimpleRNNCell
+from tensorflow.keras.layers import SimpleRNNCell
 
 
 PROBLEM_NAME = "Mackey-Glass"
@@ -92,9 +92,15 @@ def Run(modelEvaluation=True, tau=17, sequenceLenght=5000):
 
     if modelEvaluation:
         training.Concatenate(validation)
-        ModelEvaluation(LMU_ESN_BestModel, training, test,"LMU_ESN")
-        ModelEvaluation(LMU_RE_BestModel, training, test,"LMU_RE")
-        ModelEvaluation(LRMU_BestModel, training, test,"LRMU")
+        if tau == 17:
+            ModelEvaluation(LMU_ESN_T17_BestModel, training, test,"LMU_ESN_T17")
+            ModelEvaluation(LMU_RE_T17_BestModel, training, test,"LMU_RE_T17")
+            ModelEvaluation(LRMU_T17_BestModel, training, test,"LRMU_T17")
+        elif tau == 30:
+            ModelEvaluation(LMU_ESN_T30_BestModel, training, test,"LMU_ESN_T30")
+            ModelEvaluation(LMU_RE_T30_BestModel, training, test,"LMU_RE_T30")
+            ModelEvaluation(LRMU_T30_BestModel, training, test,"LRMU_T30")
+
     else:
         hyperModels = LRMUHyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH)
         TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{lengthName}_T{tau}", PROBLEM_NAME, training, validation,
