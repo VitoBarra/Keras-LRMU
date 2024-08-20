@@ -4,31 +4,23 @@ import keras_tuner
 import tensorflow.keras as ks
 
 
-def TrainAndTestModel_OBJ(buildModel, train, validation, test, batch_size=128, epochs=15, monitorStat='val_accuracy'):
-    return TrainAndTestModel(buildModel, train.Data, train.Label, validation.Data, validation.Label, test.Data,
-                             test.Label,
-                             batch_size, epochs, monitorStat)
-
-
-def TrainAndTestModel(buildModel, x_train, y_train, x_val, y_val, x_test, y_test, batch_size=128, epochs=15,
-                      monitorStat='val_accuracy'):
+def EvaluateModel(buildModel, train, test, batch_size=128, epochs=15, monitorStat='val_accuracy'):
     model = buildModel()
 
-    checkpoint_filepath = '/tmp/ckpt/checkpoint.model.keras'
+    checkpoint_filepath = './tmp/ckpt/checkpoint.model.keras'
     model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
         monitor=monitorStat,
         mode='auto',
         save_best_only=True)
 
-    history = model.fit(x_train, y_train,
+    history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,
                         epochs=epochs,
-                        validation_data=(x_val, y_val),
                         callbacks=[model_checkpoint_callback])
     model = ks.models.load_model(checkpoint_filepath)
 
-    result = model.evaluate(x_test, y_test, batch_size=batch_size)
+    result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
     return history, result
 
 
@@ -66,6 +58,11 @@ def TunerTraining(hyperModel, testName, problemName, training, validation, epoch
     except Exception as e:
         print("serach failed")
         print(e)
+
+
+    best_model = tuner.get_best_models(num_models=1)[0]
+
+    best_model.save(f"./logs/{problemName}/{testName}/$best_model.h5")
 
     tuner.results_summary()
 

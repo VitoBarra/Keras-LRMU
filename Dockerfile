@@ -1,8 +1,5 @@
-#
 #clone the tensorflow docker image
 FROM tensorflow/tensorflow:latest-gpu
-
-
 
 # set where python will look for modules
 ENV PYTHONPATH /tf

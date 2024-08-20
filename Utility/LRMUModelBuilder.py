@@ -19,20 +19,20 @@ class LRMUModelBuilder:
         return self
 
     def featureLayer(self, memoryDim, order, theta,
-                     reservoirMode, hiddenCell,
+                     reservoirEncoder, hiddenCell,
                      memoryToMemory, hiddenToMemory, inputToCell, useBias,
-                     memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
+                     memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler,
                      layerN):
         feature = LRMU(memoryDim, order, theta,
-                       reservoirMode, hiddenCell,
+                       reservoirEncoder, hiddenCell,
                        memoryToMemory, hiddenToMemory, inputToCell, useBias,
-                       memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
+                       memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler,
                        self.Seed, returnSequences=layerN > 1)(self.Input)
         for i in range(layerN - 1):
             feature = LRMU(memoryDim, order, theta,
-                           reservoirMode, hiddenCell,
+                           reservoirEncoder, hiddenCell,
                            memoryToMemory, hiddenToMemory, inputToCell, useBias,
-                           memoryToMemoryScaler, hiddenToMemoryScaler, inputToHiddenCellScaler, biasScaler,
+                           memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler,
                            self.Seed, returnSequences=i != layerN - 2)(feature)
         self.Feature = feature
         return self
@@ -43,8 +43,8 @@ class LRMUModelBuilder:
 
         return self
 
-    def outputPrediction(self):
-        self.Outputs = ks.layers.Dense(1, activation="linear", kernel_initializer=GlorotUniform(self.Seed))(
+    def outputPrediction(self,unit=1,acctivation ="linear"):
+        self.Outputs = ks.layers.Dense(unit, activation=acctivation, kernel_initializer=GlorotUniform(self.Seed))(
             self.Feature)
         return self
 

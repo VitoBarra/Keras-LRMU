@@ -20,5 +20,5 @@ if __name__ == "__main__":
     print(selectedGPU)
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{selectedGPU}"
 
-    MackeyGlass.Run(False)
-    #psMNIST.Run(False)
+    MackeyGlass.Run(True,17,5000)
+    #psMNIST.Run(True)

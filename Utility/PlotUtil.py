@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 
 
 
-def PlotModelLoss(history, modelName='Problems', path=None, filename=None):
-    plt.title(modelName)
+def PlotModelLoss(history, plotTitle='Problems', path=None, filename=None):
+    plt.title(plotTitle)
 
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -15,8 +15,8 @@ def PlotModelLoss(history, modelName='Problems', path=None, filename=None):
     ShowOrSavePlot(path, filename)
 
 
-def PlotModelAccuracy(history, modelName='Problems', path=None, filename=None):
-    plt.title(modelName)
+def PlotModelAccuracy(history, plotTitle='Problems', path=None, filename=None):
+    plt.title(plotTitle)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
