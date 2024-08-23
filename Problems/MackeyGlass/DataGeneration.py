@@ -1,9 +1,10 @@
 import collections
-
+from Utility.DataUtil import DataLabel
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from Utility.PlotUtil import *
+
 
 def mackey_glass(sample_len=1000, tau=17, delta_t=10, seed=None, n_samples=1):
     # Adapted from https://github.com/mila-iqia/summerschool2015/blob/master/rnn_tutorial/synthetic.py
@@ -71,3 +72,11 @@ def cool_plot(X, Y, title=""):
     sns.despine(offset=15)
 
     ShowOrSavePlot("./plots", "MackeyGlass")
+
+
+def MackeyGlassDataset(validationSplit=0.1, testSplit=0.1, sample=128, sequenceLenght=5000, predictLength=15, tau=17,
+                       seed=0):
+    data, label = generate_data(sample, sequenceLenght, seed, predictLength, tau)
+    dataset = DataLabel(data, label)
+    training, validation, test = dataset.SplitDataset(validationSplit, testSplit)
+    return training, validation, test

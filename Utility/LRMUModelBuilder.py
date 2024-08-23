@@ -7,15 +7,15 @@ from LRMU import LRMU
 
 class LRMUModelBuilder:
 
-    def __init__(self, problemName, modelName, seed=0):
+    def __init__(self, problemName, modelVariant, seed=0):
         self.Input = None
         self.Model = None
         self.ProblemName = problemName
-        self.ModelType = modelName
+        self.ModelVariant = modelVariant
         self.Seed = seed
 
     def inputLayer(self, sequenceLenght):
-        self.Input = ks.Input(shape=(sequenceLenght, 1), name=f"{self.ModelType}_Input")
+        self.Input = ks.Input(shape=(sequenceLenght, 1), name=f"{self.ModelVariant}_Input")
         return self
 
     def featureLayer(self, memoryDim, order, theta,
@@ -50,7 +50,7 @@ class LRMUModelBuilder:
 
     def composeModel(self):
         self.Model = ks.Model(inputs=self.Input, outputs=self.Outputs,
-                              name=f"{self.ProblemName}_{self.ModelType}_Model")
+                              name=f"{self.ProblemName}_{self.ModelVariant}_Model")
         self.Model.summary()
         return self
 
