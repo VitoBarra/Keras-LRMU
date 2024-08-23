@@ -1,4 +1,5 @@
-import keras.initializers
+from tensorflow.keras.initializers import *
+import tensorflow.keras as keras
 from packaging import version
 from Utility import MathUtility as M
 import tensorflow as tf
@@ -15,12 +16,12 @@ else:
     from keras.layers import Layer as BaseRandomLayer
 
 
-@tf.keras.utils.register_keras_serializable("keras-lrmu")
+@tf.keras.utils.register_keras_serializable()
 class LRMUCell(keras.layers.Layer):
     def __init__(self, memoryDimension, order, theta,
                  reservoirEncoders=True, hiddenCell=None,
                  memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
-                 memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0, InputEncoderScaler=1.0, biasScaler=1.0,
+                 memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0, inputEncoderScaler=1.0, biasScaler=1.0,
                  seed=0, **kwargs):
         super().__init__(**kwargs)
         self.MemoryDim = memoryDimension
@@ -34,7 +35,7 @@ class LRMUCell(keras.layers.Layer):
 
         self.MemoryEncoderScaler = memoryEncoderScaler
         self.HiddenEncoderScaler = hiddenEncoderScaler
-        self.InputEncoderScaler = InputEncoderScaler
+        self.InputEncoderScaler = inputEncoderScaler
         self.BiasScaler = biasScaler
 
         self.HiddenCell = hiddenCell
@@ -48,7 +49,6 @@ class LRMUCell(keras.layers.Layer):
 
         self.A = None
         self.B = None
-
 
         if self.HiddenCell is None:
             if self.HiddenToMemory:
@@ -69,9 +69,9 @@ class LRMUCell(keras.layers.Layer):
 
     def createWeight(self, shape, scaler=1.0):
         if self.ReservoirEncoders:
-            initializer = keras.initializers.RandomUniform(minval=-scaler, maxval=scaler, seed=self.Seed)
+            initializer = RandomUniform(minval=-scaler, maxval=scaler, seed=self.Seed)
         else:
-            initializer = keras.initializers.GlorotUniform(seed=self.Seed)
+            initializer = GlorotUniform(seed=self.Seed)
 
         return self.add_weight(shape=shape, initializer=initializer, trainable=(not self.ReservoirEncoders))
 
@@ -178,7 +178,7 @@ class LRMUCell(keras.layers.Layer):
                 "useBias": self.UseBias,
                 "memoryEncoderScaler": self.MemoryEncoderScaler,
                 "hiddenEncoderScaler": self.HiddenEncoderScaler,
-                "InputEncoderScaler": self.InputEncoderScaler,
+                "inputEncoderScaler": self.InputEncoderScaler,
                 "biasScaler": self.BiasScaler,
                 "seed": self.Seed})
 
@@ -196,7 +196,7 @@ class LRMUCell(keras.layers.Layer):
         return super().from_config(config)
 
 
-@tf.keras.utils.register_keras_serializable("keras-lrmu")
+@tf.keras.utils.register_keras_serializable()
 class LRMU(keras.layers.Layer):
 
     def __init__(self, memoryDimension, order, theta,
@@ -255,7 +255,7 @@ class LRMU(keras.layers.Layer):
             "useBias": self.UseBias,
             "memoryEncoderScaler": self.MemoryEncoderScaler,
             "hiddenEncoderScaler": self.HiddenEncoderScaler,
-            "inputEncoderScaler": self.InputEncoderScaler,
+            "InputEncoderScaler": self.InputEncoderScaler,
             "biasScaler": self.BiasScaler,
 
             "seed": self.Seed,
@@ -270,6 +270,5 @@ class LRMU(keras.layers.Layer):
         config["hiddenCell"] = (
             None
             if config["hiddenCell"] is None
-            else keras.layers.deserialize(config["hiddenCell"])
-        )
+            else keras.layers.deserialize(config["hiddenCell"]))
         return super().from_config(config)

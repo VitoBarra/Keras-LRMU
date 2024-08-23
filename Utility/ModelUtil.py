@@ -4,15 +4,16 @@ import keras_tuner
 import tensorflow.keras as ks
 
 
-def EvaluateModel(buildModel, train, test, batch_size=128, epochs=15, monitorStat='val_accuracy'):
+def EvaluateModel(buildModel,testName, train, test, batch_size=128, epochs=15, monitorStat='val_loss'):
     model = buildModel()
 
-    checkpoint_filepath = './tmp/ckpt/checkpoint.model.keras'
+    checkpoint_filepath = f"./tmp/ckpt/{testName}/model.keras"
     model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
         monitor=monitorStat,
         mode='auto',
-        save_best_only=True)
+        verbose=0
+    )
 
     history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,

@@ -8,7 +8,6 @@ def PlotModelLoss(history, plotTitle='Problems', path=None, filename=None):
     plt.title(plotTitle)
 
     plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='upper left')

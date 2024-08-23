@@ -4,6 +4,7 @@ services:
     volumes:
       - ./logs:/tf/logs
       - ./plots:/tf/plots
+      - ./tmp:/tf/tmp
     deploy:
       resources:
         reservations:

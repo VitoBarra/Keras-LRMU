@@ -72,8 +72,8 @@ def LRMU_T30_BestModel():
 
 
 
-def ModelEvaluation(model, training, test,testName):
-    history, result = EvaluateModel(model, training, test, 64, 15, "val_loss")
+def ModelEvaluation(model, testName,training, test):
+    history, result = EvaluateModel(model,  testName, training, test, 64, 15, "val_loss")
 
     print("test loss:", result[0])
     print("test mse:", result[1])
@@ -93,13 +93,13 @@ def Run(modelEvaluation=True, tau=17, sequenceLenght=5000):
     if modelEvaluation:
         training.Concatenate(validation)
         if tau == 17:
-            ModelEvaluation(LMU_ESN_T17_BestModel, training, test,"LMU_ESN_T17")
-            ModelEvaluation(LMU_RE_T17_BestModel, training, test,"LMU_RE_T17")
-            ModelEvaluation(LRMU_T17_BestModel, training, test,"LRMU_T17")
+            ModelEvaluation(LMU_ESN_T17_BestModel,"LMU_ESN_T17", training, test)
+            ModelEvaluation(LMU_RE_T17_BestModel,"LMU_RE_T17",training, test)
+            ModelEvaluation(LRMU_T17_BestModel,"LRMU_T17", training, test)
         elif tau == 30:
-            ModelEvaluation(LMU_ESN_T30_BestModel, training, test,"LMU_ESN_T30")
-            ModelEvaluation(LMU_RE_T30_BestModel, training, test,"LMU_RE_T30")
-            ModelEvaluation(LRMU_T30_BestModel, training, test,"LRMU_T30")
+            ModelEvaluation(LMU_ESN_T30_BestModel, "LMU_ESN_T30",training, test)
+            ModelEvaluation(LMU_RE_T30_BestModel, "LMU_RE_T30",training, test)
+            ModelEvaluation(LRMU_T30_BestModel, "LRMU_T30",training, test)
 
     else:
         hyperModels = LRMUHyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH)

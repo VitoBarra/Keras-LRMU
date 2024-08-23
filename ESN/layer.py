@@ -1,7 +1,10 @@
-from keras.initializers import *
+from tensorflow.keras.initializers import *
+import tensorflow.keras as keras
 from ESN.Inizializer import *
+import tensorflow as tf
 
 
+@tf.keras.utils.register_keras_serializable("keras-esn")
 class ReservoirCell(keras.layers.Layer):
 
     # builds a reservoir as a hidden dynamical layer for a recurrent neural network
@@ -49,10 +52,11 @@ class ReservoirCell(keras.layers.Layer):
         input_part = tf.matmul(inputs, self.kernel)
         state_part = tf.matmul(prev_output, self.recurrent_kernel)
 
+        output =(1 - self.leaky) * prev_output
         if self.activation is not None:
-            output = prev_output * (1 - self.leaky) + self.leaky * self.activation(input_part + self.bias + state_part)
+            output += self.leaky * self.activation(input_part + self.bias + state_part)
         else:
-            output = prev_output * (1 - self.leaky) + self.leaky * (input_part + self.bias + state_part)
+            output += self.leaky * (input_part + self.bias + state_part)
 
         return output, [output]
 
@@ -62,11 +66,16 @@ class ReservoirCell(keras.layers.Layer):
         config = super().get_config()
         config.update({
             "units": self.units,
-            "inputScaling": self.InputScaling,
-            "biasScaling": self.BiasScaling,
-            "spectralRadius": self.SpectralRadius,
-            "leaky": self.Leaky,
-            "activation": self.Activation.__name__,
-            "seed": self.Seed})
+            "input_scaling": self.input_scaling,
+            "bias_scaling": self.bias_scaling,
+            "spectral_radius": self.spectral_radius,
+            "leaky": self.leaky,
+            "activation": self.activation.__name__,
+            "seed": self.seed})
 
         return config
+    
+    @classmethod
+    def from_config(cls, config):
+        config["activation"]= tf.keras.activations.deserialize(config["activation"])
+        return super().from_config(config)

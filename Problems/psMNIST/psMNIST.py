@@ -44,8 +44,8 @@ def LRMU_BestModel():
 
 
 
-def ModelEvaluation(model,training, test,testName):
-    history, result = EvaluateModel(model, training, test, 64, 10)
+def ModelEvaluation(model, testName,training, test):
+    history, result = EvaluateModel(model,testName, training, test, 64, 10,"val_accuracy")
 
     print(f"Test loss: {result[0]}")
     print(f"Test accuracy: {result[1]}")
@@ -71,9 +71,9 @@ def Run(modelEvaluation=True):
 
     if modelEvaluation:
         training.Concatenate(validation)
-        ModelEvaluation(LMU_ESN_BestModel, training, test,"LMU_ESN")
-        ModelEvaluation(LMU_RE_BestModel, training, test,"LMU_RE")
-        ModelEvaluation(LRMU_BestModel, training, test,"LRMU")
+        ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN",training, test)
+        ModelEvaluation(LMU_RE_BestModel,"LMU_RE", training, test)
+        ModelEvaluation(LRMU_BestModel,"LRMU", training, test)
     else:
         TunerTraining(hyperModels.LMU_ESN(), "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150, False)
         TunerTraining(hyperModels.LMU_RE(), "LMU_RE_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150, False)
