@@ -1,5 +1,6 @@
 import numpy.random as rng
 from Utility.DataUtil import *
+import tensorflow.keras as ks
 
 def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=1509):
     """

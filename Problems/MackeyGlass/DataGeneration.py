@@ -74,9 +74,9 @@ def cool_plot(X, Y, title=""):
     ShowOrSavePlot("./plots", "MackeyGlass")
 
 
-def MackeyGlassDataset(validationSplit=0.1, testSplit=0.1, sample=128, sequenceLenght=5000, predictLength=15, tau=17,
+def MackeyGlassDataset(validationSplit=0.1, testSplit=0.1, sample=128, sequenceLength=5000, predictLength=15, tau=17,
                        seed=0):
-    data, label = generate_data(sample, sequenceLenght, seed, predictLength, tau)
+    data, label = generate_data(sample, sequenceLength, seed, predictLength, tau)
     dataset = DataLabel(data, label)
     training, validation, test = dataset.SplitDataset(validationSplit, testSplit)
     return training, validation, test

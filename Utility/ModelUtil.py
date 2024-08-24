@@ -4,7 +4,7 @@ import keras_tuner
 import tensorflow.keras as ks
 
 
-def EvaluateModel(buildModel,testName, train, test, batch_size=128, epochs=15, monitorStat='val_loss'):
+def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
     model = buildModel()
 
     checkpoint_filepath = f"./tmp/ckpt/{testName}/model.keras"
@@ -20,7 +20,8 @@ def EvaluateModel(buildModel,testName, train, test, batch_size=128, epochs=15, m
     history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,
                         epochs=epochs,
-                        callbacks=[model_checkpoint_callback])
+                        callbacks=[model_checkpoint_callback]
+                        )
     try:
         model = ks.models.load_model(checkpoint_filepath)
         result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
@@ -30,20 +31,19 @@ def EvaluateModel(buildModel,testName, train, test, batch_size=128, epochs=15, m
         raise
 
 
-
-def TunerTraining(hyperModel, testName, problemName, training, validation, epochs=10, maxTrial=100, override_test=False):
-    testDir = f"./logs/{problemName}/{testName}"
-    folder_already_exists= os.path.exists(testDir)
+def TunerTraining(hyperModel, tuningName, problemName, training, validation, epochs=10, maxTrial=100,
+                  override_test=False):
+    testDir = f"./logs/{problemName}/{tuningName}"
+    folder_already_exists = os.path.exists(testDir)
 
     if folder_already_exists:
         if override_test:
             shutil.rmtree(testDir)
+            print(f"old trial for {tuningName} deleted \n\n")
         else:
             raise Exception("folder already exists and the function is been called without override option")
 
-
-
-    tuner = keras_tuner.RandomSearch(
+    tuner = keras_tuner.BayesianOptimization(
         hypermodel=hyperModel,
         max_trials=maxTrial,
         project_name=f"{problemName}",
@@ -71,15 +71,8 @@ def TunerTraining(hyperModel, testName, problemName, training, validation, epoch
         print("serach failed")
         print(e)
 
-
     best_model = tuner.get_best_models(num_models=1)[0]
 
-    best_model.save(f"./logs/{problemName}/{testName}/best_model.h5")
+    best_model.save(f"./logs/{problemName}/{tuningName}/best_model.h5")
 
     tuner.results_summary()
-
-
-
-
-
-

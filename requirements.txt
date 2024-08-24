@@ -3,5 +3,5 @@ matplotlib
 tensorflow
 packaging
 scipy
-keras_tuner
+keras-tuner[bayesian]
 seaborn

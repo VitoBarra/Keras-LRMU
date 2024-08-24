@@ -41,29 +41,37 @@ def LRMU_BestModel():
     return LRMUBuilder.outputClassification(CLASS_NUMBER).composeModel().buildClassification()
 
 
-def ModelEvaluation(model, testName, training, test):
+def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=10):
     try:
-        history, result = EvaluateModel(model, testName, training, test, 64, 10, "val_accuracy")
+        history, result = EvaluateModel(model, testName, training, test, batchSize, epochs, "accuracy")
     except:
         return
+    # Serializing json
+
     print(f"Test loss: {result[0]}")
     print(f"Test accuracy: {result[1]}")
-    PlotModelAccuracy(history, f"{PROBLEM_NAME}_{testName}", f"./plots/{PROBLEM_NAME}", f"{testName}")
+    SaveDataForPlotJson("./plots", PROBLEM_NAME, testName, history, result)
 
 
-def RunEvaluation():
+def RunEvaluation(batchSize=64, epochs=10):
     training, validation, test = psMNISTDataset(True, 0)
 
-    ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN", training, test)
-    ModelEvaluation(LMU_RE_BestModel, "LMU_RE", training, test)
-    ModelEvaluation(LRMU_BestModel, "LRMU", training, test)
+    ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN_60k", training, test, batchSize, epochs)
+    ModelEvaluation(LMU_RE_BestModel, "LMU_RE_60k", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_BestModel, "LRMU_60k", training, test, batchSize, epochs)
 
 
-def RunTuning(dataPartition=10000):
+def RunTuning(dataPartition=10000, max_trial=50):
     training, validation, test = psMNISTDataset(True, 0.1, dataPartition)
 
     hyperModels = LRMUHyperModel("psMNIST-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, CLASS_NUMBER)
 
-    TunerTraining(hyperModels.LMU_ESN(), "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150, False)
-    TunerTraining(hyperModels.LMU_RE(), "LMU_RE_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150, False)
-    TunerTraining(hyperModels.LRMU(), "LRMU_Tuning_15k", PROBLEM_NAME, training, validation, 5, 150, False)
+    TunerTraining(hyperModels.LMU_ESN(), "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, False)
+    TunerTraining(hyperModels.LMU_RE(), "LMU_RE_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, False)
+    TunerTraining(hyperModels.LRMU(), "LRMU_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, False)
+
+
+def PlotAll():
+    ReadAndPlot("./plots", PROBLEM_NAME, "LMU_ESN_60k", True)
+    ReadAndPlot("./plots", PROBLEM_NAME, "LMU_RE_60k", True)
+    ReadAndPlot("./plots", PROBLEM_NAME, "LRMU_60k", True)
