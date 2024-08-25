@@ -1,5 +1,5 @@
 import tensorflow.keras as ks
-from keras.initializers import *
+from tensorflow.keras.initializers import *
 from LRMU import LRMU
 
 
@@ -62,6 +62,6 @@ class LRMUModelBuilder:
 
     def buildClassification(self):
         self.Model.compile(optimizer="adam",
-                           loss="sparse_categorical_crossentropy",
+                           loss="categorical_crossentropy",
                            metrics=["accuracy"])
         return self.Model

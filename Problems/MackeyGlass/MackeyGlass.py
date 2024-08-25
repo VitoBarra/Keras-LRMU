@@ -110,20 +110,20 @@ def RunTuning(sample=128, sequenceLength=5000, tau=17,max_trial=50):
     training, validation, test = (
         MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0))
 
-    hyperModels = LRMUHyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH)
+    hyperModels = LRMUHyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH,None,True,True)
     #TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
     #             validation,5, max_trial, False)
     #TunerTraining(hyperModels.LMU_RE(), f"LMU_RE_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
     #           validation, 5,max_trial, False)
     TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training, validation,
                   5,
-                  max_trial, True)
+                  max_trial, False)
 
 
 
 
 def PlotAll(sample=128,sequenceLength=5000,tau=17):
     lengthName = f"{str(sequenceLength)[0]}k"
-    ReadAndPlot("./plots", PROBLEM_NAME, f"LMU_ESN_{sample}_{lengthName}_T{tau}", True)
-    ReadAndPlot("./plots", PROBLEM_NAME, f"LMU_RE_{sample}_{lengthName}_T{tau}", True)
-    ReadAndPlot("./plots", PROBLEM_NAME, f"LRMU_{sample}_{lengthName}_T{tau}", True)
+    ReadAndPlot("./plots", PROBLEM_NAME, f"LMU_ESN_{sample}_{lengthName}_T{tau}", False)
+    ReadAndPlot("./plots", PROBLEM_NAME, f"LMU_RE_{sample}_{lengthName}_T{tau}", False)
+    ReadAndPlot("./plots", PROBLEM_NAME, f"LRMU_{sample}_{lengthName}_T{tau}", False)

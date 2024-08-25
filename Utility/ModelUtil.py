@@ -56,6 +56,17 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         directory=f"{problemName}/tmp",
     )
 
+    earlyStop = ks.callbacks.EarlyStopping(
+        monitor="val_loss",
+        min_delta=0.01,
+        patience=0,
+        verbose=0,
+        mode="auto",
+        baseline=2.0,
+        restore_best_weights=False,
+        start_from_epoch=0,
+    )
+    tensorboardCB=ks.callbacks.TensorBoard(f"{testDir}")
     try:
         tuner.search(
             training.Data,
@@ -63,16 +74,17 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
             validation_data=(validation.Data, validation.Label),
             epochs=epochs,
             # Use the TensorBoard callback.
-            callbacks=[ks.callbacks.TensorBoard(f"{testDir}")],
+            callbacks=[tensorboardCB, earlyStop],
         )
     except keras_tuner.errors.FatalError as e:
         print("serach failed")
+        return
     except Exception as e:
         print("serach failed")
         print(e)
+        return
 
     best_model = tuner.get_best_models(num_models=1)[0]
-
     best_model.save(f"./logs/{problemName}/{tuningName}/best_model.h5")
 
     tuner.results_summary()

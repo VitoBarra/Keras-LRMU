@@ -17,11 +17,11 @@ if __name__ == "__main__":
     selectedGPU = "3"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{selectedGPU}"
 
-    for tau in [17, 30]:
-        #MackeyGlass.RunTuning(128,5000,tau,50)
-        MackeyGlass.RunEvaluation(128, 5000, tau , epochs=25)
-        MackeyGlass.PlotAll(128, 5000, tau)
+    # for tau in [17, 30]:
+    #     #MackeyGlass.RunTuning(128,5000,tau,50)
+    #     MackeyGlass.RunEvaluation(128, 5000, tau , epochs=25)
+    #     MackeyGlass.PlotAll(128, 5000, tau)
 
-    #psMNIST.RunTuning(10000)
-    psMNIST.RunEvaluation()
-    psMNIST.PlotAll()
+    psMNIST.RunTuning(10000)
+    #psMNIST.RunEvaluation()
+    # psMNIST.PlotAll()

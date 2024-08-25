@@ -7,17 +7,18 @@ from Utility.LRMUModelBuilder import LRMUModelBuilder
 
 class LRMUHyperModel(kt.HyperModel):
 
-    def __init__(self, hyperModelName, problemName, sequenceLenght, classNuber=0, seed=0):
+    def __init__(self, hyperModelName, problemName, sequenceLength, classNuber=None, searchTheta=True, useLeaky= True, seed=0):
         super().__init__(hyperModelName)
-        self.UseLeaky = True
+        self.UseLeaky = useLeaky
         self.UseInputScaler = False
         self.Seed = seed
         self.ProblemName = problemName
-        self.SequenceLength = sequenceLenght
+        self.SequenceLength = sequenceLength
+        self.SearchTheta = searchTheta
 
         self.ClassNumber = classNuber
 
-        if classNuber < 1:
+        if classNuber is None:
             self.ModelType = 1
         else:
             self.ModelType = 2
@@ -69,9 +70,13 @@ class LRMUHyperModel(kt.HyperModel):
 
     def LMUParam(self, hp):
         layerN = 1
-        memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32])
-        order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
-        theta = hp.Int("theta", min_value=16, max_value=258, step=16)
+        if self.ModelType == 1:
+            memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32])
+            order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
+        else:
+            memoryDim = hp.Int("memoryDim",min_value=128, max_value=256, step=32)
+            order = hp.Int("order", min_value=128, max_value=512, step=64)
+        theta = hp.Int("theta", min_value=16, max_value=258, step=16) if self.SearchTheta else self.SequenceLength
         hiddenUnit = hp.Int("hiddenUnit", min_value=16, max_value=16 * 20, step=16)
         return layerN, memoryDim, order, theta, self.selectCell(hp, hiddenUnit)
 

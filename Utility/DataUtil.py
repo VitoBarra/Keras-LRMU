@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.random as rng
-
+import tensorflow as tf
+from typing import Type
 
 def TimeSeriesSampleRate(data, rate=2):
     '''
@@ -32,6 +33,7 @@ class DataLabel(object):
             raise ValueError('Data and label must have the same length')
         self.Data = data
         self.Label = label
+        self.isCategorical=False
 
     def SplitDataset(self, validationParcent=0.15, testParcent=0.1):
         if validationParcent < 0 or testParcent < 0:
@@ -62,11 +64,17 @@ class DataLabel(object):
         self.Label = self.Label[splitIndex:]
         return self, dataSplit
 
-    def Concatenate(self, dataLable):
-        self.Data = np.concatenate((self.Data, dataLable.Data), axis=0)
-        self.Label = np.concatenate((self.Label, dataLable.Label), axis=0)
+    def Concatenate(self, dataLabel):
+        if self.isCategorical != dataLabel.isCategorical:
+            raise ValueError("each of the dataLabe class must same type of label")
+        self.Data = np.concatenate((self.Data, dataLabel.Data), axis=0)
+        self.Label = np.concatenate((self.Label, dataLabel.Label), axis=0)
 
     def Shuffle(self, seed=0):
         rng.seed(seed)
         perm = rng.permutation(self.Data.shape[0])
         self.Data = self.Data[perm,]
+
+    def ToCategoricalLabel(self):
+        self.Label = tf.keras.utils.to_categorical(self.Label)
+        self.isCategorical=True
