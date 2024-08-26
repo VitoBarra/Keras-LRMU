@@ -2,6 +2,11 @@ import numpy.random as rng
 from Utility.DataUtil import *
 import tensorflow.keras as ks
 
+
+def LoadMNISTData():
+    return ks.datasets.mnist.load_data()
+
+
 def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=1509):
     """
     Creates a permuted sequential MNIST (psMNIST) dataset with optional shuffling and data partitioning.
@@ -17,7 +22,7 @@ def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=15
     """
 
     # Load the MNIST dataset
-    ((training_sample, training_label), (test_sample, test_labels)) = ks.datasets.mnist.load_data()
+    ((training_sample, training_label), (test_sample, test_labels)) = LoadMNISTData()
 
     # Reshape the data to the psMNIST format
     training_sample = training_sample.reshape(training_sample.shape[0], -1, 1)
@@ -28,9 +33,9 @@ def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=15
     perm = rng.permutation(training_sample.shape[1])
 
     #Optionally partition the data
-    if dataPartition>0:
-        training_sample =training_sample[:dataPartition]
-        training_label=training_label[:dataPartition]
+    if dataPartition > 0:
+        training_sample = training_sample[:dataPartition]
+        training_label = training_label[:dataPartition]
 
         #Apply the permutation to the Data
     training_sample = training_sample[:, perm]
@@ -46,5 +51,5 @@ def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=15
         test_dataset.Shuffle()
 
     # Split the training data into training and validation sets and return
-    training, validation=training_data_set.SplitIn2(validationSplit)
+    training, validation = training_data_set.SplitIn2(validationSplit)
     return training, validation, test_dataset

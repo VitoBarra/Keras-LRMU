@@ -22,6 +22,6 @@ if __name__ == "__main__":
     #     MackeyGlass.RunEvaluation(128, 5000, tau , epochs=25)
     #     MackeyGlass.PlotAll(128, 5000, tau)
 
-    psMNIST.RunTuning(10000)
-    #psMNIST.RunEvaluation()
+    #psMNIST.RunTuning(10000)
+    psMNIST.RunEvaluation()
     # psMNIST.PlotAll()
