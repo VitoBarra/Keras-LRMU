@@ -18,9 +18,8 @@ else:
 
 @tf.keras.utils.register_keras_serializable()
 class LRMUCell(keras.layers.Layer):
-    def __init__(self, memoryDimension, order, theta,
-                 reservoirEncoders=True, hiddenCell=None,
-                 memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
+    def __init__(self, memoryDimension, order, theta, hiddenCell=None,
+                 hiddenToMemory=False, memoryToMemory=False, inputToHiddenCell=False, useBias=False,
                  memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0, inputEncoderScaler=1.0, biasScaler=1.0,
                  seed=0, **kwargs):
         super().__init__(**kwargs)
@@ -39,7 +38,6 @@ class LRMUCell(keras.layers.Layer):
         self.BiasScaler = biasScaler
 
         self.HiddenCell = hiddenCell
-        self.ReservoirEncoders = reservoirEncoders
         self.Seed = seed
 
         self.RecurrentMemoryKernel = None
@@ -68,12 +66,9 @@ class LRMUCell(keras.layers.Layer):
         self.output_size = self.HiddenOutputSize
 
     def createWeight(self, shape, scaler=1.0):
-        if self.ReservoirEncoders:
-            initializer = RandomUniform(minval=-scaler, maxval=scaler, seed=self.Seed)
-        else:
-            initializer = GlorotUniform(seed=self.Seed)
 
-        return self.add_weight(shape=shape, initializer=initializer, trainable=(not self.ReservoirEncoders))
+        initializer = RandomUniform(minval=-scaler, maxval=scaler, seed=self.Seed)
+        return self.add_weight(shape=shape, initializer=initializer, trainable=False)
 
     def build(self, input_shape):
         tf.random.set_seed(self.Seed)
@@ -82,16 +77,12 @@ class LRMUCell(keras.layers.Layer):
         inputDim = input_shape[-1]
         outDim = self.HiddenOutputSize
 
-        if not self.ReservoirEncoders:
-            ker_dimension = inputDim + outDim if self.HiddenToMemory else inputDim
-            self.MemoryKernel = self.createWeight(shape=(ker_dimension, self.MemoryDim))
-        else:
-            input_encoder = self.createWeight(shape=(inputDim, self.MemoryDim), scaler=self.InputEncoderScaler)
-            hidden_encoder = None
-            if self.HiddenToMemory:
-                hidden_encoder = self.createWeight(shape=(outDim, self.MemoryDim), scaler=self.HiddenEncoderScaler)
-            self.MemoryKernel = input_encoder if hidden_encoder is None else tf.concat([input_encoder, hidden_encoder],
-                                                                                       axis=0)
+        input_encoder = self.createWeight(shape=(inputDim, self.MemoryDim), scaler=self.InputEncoderScaler)
+        hidden_encoder = None
+        if self.HiddenToMemory:
+            hidden_encoder = self.createWeight(shape=(outDim, self.MemoryDim), scaler=self.HiddenEncoderScaler)
+        self.MemoryKernel = input_encoder if hidden_encoder is None else tf.concat([input_encoder, hidden_encoder],
+                                                                                   axis=0)
 
         if self.MemoryToMemory:
             self.RecurrentMemoryKernel = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim),
@@ -170,10 +161,9 @@ class LRMUCell(keras.layers.Layer):
                 "memoryDimension": self.MemoryDim,
                 "order": self.Order,
                 "theta": self.Theta,
-                "reservoirEncoders": self.ReservoirEncoders,
                 "hiddenCell": keras.layers.serialize(self.HiddenCell),
-                "memoryToMemory": self.MemoryToMemory,
                 "hiddenToMemory": self.HiddenToMemory,
+                "memoryToMemory": self.MemoryToMemory,
                 "inputToHiddenCell": self.InputToHiddenCell,
                 "useBias": self.UseBias,
                 "memoryEncoderScaler": self.MemoryEncoderScaler,
@@ -199,10 +189,10 @@ class LRMUCell(keras.layers.Layer):
 @tf.keras.utils.register_keras_serializable()
 class LRMU(keras.layers.Layer):
 
-    def __init__(self, memoryDimension, order, theta,
-                 reservoirEncoders=True, hiddenCell=None,
-                 memoryToMemory=False, hiddenToMemory=False, inputToHiddenCell=False, useBias=False,
-                 memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0, InputEncoderScaler=1.0, biasScaler=1.0,
+    def __init__(self, memoryDimension, order, theta, hiddenCell=None,
+                 hiddenToMemory=False, memoryToMemory=False, inputToHiddenCell=False, useBias=False,
+                 memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0,
+                 InputEncoderScaler=1.0, biasScaler=1.0,
                  seed=0, returnSequences=False, **kwargs):
         super().__init__(**kwargs)
         self.MemoryDim = memoryDimension
@@ -213,7 +203,6 @@ class LRMU(keras.layers.Layer):
         self.InputToHiddenCell = inputToHiddenCell
         self.UseBias = useBias
         self.HiddenCell = hiddenCell
-        self.ReservoirEncoders = reservoirEncoders
 
         self.MemoryEncoderScaler = memoryEncoderScaler
         self.HiddenEncoderScaler = hiddenEncoderScaler
@@ -229,9 +218,8 @@ class LRMU(keras.layers.Layer):
         super().build(input_shape)
 
         self.layer = keras.layers.RNN(
-            LRMUCell(self.MemoryDim, self.Order, self.Theta,
-                     self.ReservoirEncoders, self.HiddenCell,
-                     self.MemoryToMemory, self.HiddenToMemory, self.InputToHiddenCell, self.UseBias,
+            LRMUCell(self.MemoryDim, self.Order, self.Theta, self.HiddenCell,
+                     self.HiddenToMemory, self.MemoryToMemory, self.InputToHiddenCell, self.UseBias,
                      self.MemoryEncoderScaler, self.HiddenEncoderScaler, self.InputEncoderScaler, self.BiasScaler,
                      self.Seed), return_sequences=self.ReturnSequence)
 
@@ -247,10 +235,9 @@ class LRMU(keras.layers.Layer):
             "memoryDimension": self.MemoryDim,
             "order": self.Order,
             "theta": self.Theta,
-            "reservoirEncoders": self.ReservoirEncoders,
             "hiddenCell": keras.layers.serialize(self.HiddenCell),
-            "memoryToMemory": self.MemoryToMemory,
             "hiddenToMemory": self.HiddenToMemory,
+            "memoryToMemory": self.MemoryToMemory,
             "inputToHiddenCell": self.InputToHiddenCell,
             "useBias": self.UseBias,
             "memoryEncoderScaler": self.MemoryEncoderScaler,

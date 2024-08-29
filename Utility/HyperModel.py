@@ -1,11 +1,11 @@
 import keras_tuner as kt
 import tensorflow.keras as ks
 from ESN.layer import *
-from keras.initializers import *
-from Utility.LRMUModelBuilder import LRMUModelBuilder
+from tensorflow.keras.initializers import *
+from Utility.ModelBuilder import ModelBuilder
 
 
-class LRMUHyperModel(kt.HyperModel):
+class HyperModel(kt.HyperModel):
 
     def __init__(self, hyperModelName, problemName, sequenceLength, classNuber=None, searchTheta=True, useLeaky= True, seed=0):
         super().__init__(hyperModelName)
@@ -23,38 +23,38 @@ class LRMUHyperModel(kt.HyperModel):
         else:
             self.ModelType = 2
 
-        self.LRMUBuilder = None
+        self.Builder = None
         self.ModelName = None
         self.UseESN = None
-        self.ReservoirEncoders = None
+        self.UseLRMU = None
 
     def LMU_ESN(self, useLeaky=True, useInputScaler=False):
         self.ModelName = "LMU-ESN"
+        self.UseLRMU = False
         self.UseESN = True
         self.UseLeaky = useLeaky
         self.UseInputScaler = useInputScaler
-        self.ReservoirEncoders = False
-        self.CreateLRMUBuilder()
+        self.CreateModelBuilder()
         return self
 
-    def LMU_RE(self):
-        self.ModelName = "LMU-RE"
-        self.UseESN = False
-        self.ReservoirEncoders = True
-        self.CreateLRMUBuilder()
-        return self
-
-    def LRMU(self, useLeaky=True, useInputScaler=False):
+    def LRMU(self):
         self.ModelName = "LRMU"
+        self.UseLRMU = True
+        self.UseESN = False
+        self.CreateModelBuilder()
+        return self
+
+    def LRMU_ESN(self, useLeaky=True, useInputScaler=False):
+        self.ModelName = "LRMU-ESN"
+        self.UseLRMU = True
         self.UseESN = True
         self.UseLeaky = useLeaky
         self.UseInputScaler = useInputScaler
-        self.ReservoirEncoders = True
-        self.CreateLRMUBuilder()
+        self.CreateModelBuilder()
         return self
 
-    def CreateLRMUBuilder(self):
-        self.LRMUBuilder = LRMUModelBuilder(self.ProblemName, self.ModelName, self.Seed)
+    def CreateModelBuilder(self):
+        self.Builder = ModelBuilder(self.ProblemName, self.ModelName, self.Seed)
 
     def selectCell(self, hp, hiddenUnit):
         if not self.UseESN:
@@ -102,7 +102,7 @@ class LRMUHyperModel(kt.HyperModel):
         hiddenToMemory = hp.Boolean("hiddenToMemory")
         inputToHiddenCell = hp.Boolean("inputToHiddenCell")
         useBias = hp.Boolean("useBias")
-        return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, self.ReservoirEncoders,
+        return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, self.UseLRMU,
                                                                                              memoryToMemory,
                                                                                              hiddenToMemory, useBias)
 
@@ -112,16 +112,22 @@ class LRMUHyperModel(kt.HyperModel):
         memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = self.selectConnection(hp)
         (memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler) = scaler
 
-        self.LRMUBuilder.inputLayer(self.SequenceLength)
-        self.LRMUBuilder.featureLayer(memoryDim, order, theta,
-                                      self.ReservoirEncoders, hiddenCell,
-                                      memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
-                                      memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler,
-                                      layerN)
+        self.Builder.inputLayer(self.SequenceLength)
+        if self.UseLRMU:
+            self.Builder.LRMU(memoryDim, order, theta, hiddenCell,
+                              memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
+                              memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler,
+                              layerN)
+        else:
+            self.Builder.LMU(memoryDim, order, theta, hiddenCell,False,
+                             memoryToMemory, inputToHiddenCell, hiddenToMemory,useBias,
+                             layerN )
+
+
         if self.ModelType == 1:
-            return self.LRMUBuilder.outputPrediction().composeModel().buildPrediction()
+            return self.Builder.BuildPrediction().composeModel().CopilePrediction()
         elif self.ModelType == 2:
-            return self.LRMUBuilder.outputClassification(self.ClassNumber).composeModel().buildClassification()
+            return self.Builder.BuildClassification(self.ClassNumber).composeModel().CompileClassification()
         else:
             return None
 

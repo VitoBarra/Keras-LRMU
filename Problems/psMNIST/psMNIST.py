@@ -1,76 +1,81 @@
+from Problems.psMNIST.Config import *
+from Problems.psMNIST.DataGeneration import *
 import LMU.layers
 from Utility.PlotUtil import *
 from Utility.ModelUtil import *
 from ESN.layer import *
-from Utility.LRMUHyperModel import LRMUHyperModel
-from Utility.LRMUModelBuilder import LRMUModelBuilder
+from Utility.HyperModel import HyperModel
+from Utility.ModelBuilder import ModelBuilder
 import tensorflow.keras as ks
-from tensorflow.keras.layers import SimpleRNNCell,Dense
-from Problems.psMNIST.DataGeneration import psMNISTDataset
-
-PROBLEM_NAME = "psMNIST"
-CLASS_NUMBER = 10
-SEQUENCE_LENGTH = 784
+from tensorflow.keras.layers import SimpleRNNCell, Dense
 
 
+def LMU_Original():
+    Builder = ModelBuilder(PROBLEM_NAME, "LMU")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LMU(1, 256, SEQUENCE_LENGTH, SimpleRNNCell(units=212), False,
+                False, False, True, False, 1)
+    return Builder.BuildClassification(CLASS_NUMBER)
 
-
-def LMU_Original_BestModel():
-
-    input = ks.Input(shape=(SEQUENCE_LENGTH, 1), name=f"LUM_Input")
-
-    feature = LMU.LMU(memory_d=1,
-                order=256,
-                theta=SEQUENCE_LENGTH,
-                hidden_cell=SimpleRNNCell(units=212),
-                memory_to_memory= True,
-                hidden_to_memory=True,
-                input_to_hidden=True,
-                return_sequences=False)(input)
-    outputs=Dense(10, activation='softmax')(feature)
-
-    model=ks.Model(inputs=input, outputs=outputs,
-         name=f"{PROBLEM_NAME}_LMU_Model")
-
-    model.summary()
-    model.compile(loss="categorical_crossentropy", optimizer='adam', metrics=['accuracy'])
-    return   model
 
 def LMU_ESN_BestModel():
-    LRMUBuilder = LRMUModelBuilder(PROBLEM_NAME, "LMU_ESN")
-    LRMUBuilder.inputLayer(SEQUENCE_LENGTH)
-    LRMUBuilder.featureLayer(32, 24, SEQUENCE_LENGTH, False,
-                             ReservoirCell(160, spectral_radius=1.05, leaky=1),
-                             True, True, False, False,
-                             1, 1, 1, 1, 1)
-    return LRMUBuilder.outputClassification(CLASS_NUMBER).composeModel().buildClassification()
-
-
-def LMU_RE_BestModel():
-    LRMUBuilder = LRMUModelBuilder(PROBLEM_NAME, "LMU_RE")
-    LRMUBuilder.inputLayer(SEQUENCE_LENGTH)
-    LRMUBuilder.featureLayer(2, 48, SEQUENCE_LENGTH, True,
-                             SimpleRNNCell(288, kernel_initializer=keras.initializers.GlorotUniform),
-                             False, True, True, False,
-                             2.0, 0.75, 2.0, 1.75, 1)
-    return LRMUBuilder.outputClassification(CLASS_NUMBER).composeModel().buildClassification()
+    Builder = ModelBuilder(PROBLEM_NAME, "LMU_ESN")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LMU(32, 24, SEQUENCE_LENGTH, ReservoirCell(160, spectral_radius=1.05, leaky=1), False,
+                True, True, False, False, 1)
+    return Builder.BuildClassification(CLASS_NUMBER)
 
 
 def LRMU_BestModel():
-    LRMUBuilder = LRMUModelBuilder(PROBLEM_NAME, "LRMU")
-    LRMUBuilder.inputLayer(SEQUENCE_LENGTH)
-    LRMUBuilder.featureLayer(8, 64, SEQUENCE_LENGTH, True,
-                             ReservoirCell(320, spectral_radius=1.1, leaky=1),
-                             False, True, True, False,
-                             1.75, 2, 1.0, 1.75, 1)
-    return LRMUBuilder.outputClassification(CLASS_NUMBER).composeModel().buildClassification()
+    Builder = ModelBuilder(PROBLEM_NAME, "LRMU")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LRMU(2, 48, SEQUENCE_LENGTH, SimpleRNNCell(288, kernel_initializer=keras.initializers.GlorotUniform),
+                 False, True, True, False,
+                 2.0, 0.75, 2.0, 1.75, 1)
+    return Builder.BuildClassification(CLASS_NUMBER)
+
+def LRMU_ESN_BestModel():
+    Builder = ModelBuilder(PROBLEM_NAME, "LRMU_ESN")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LRMU(8, 64, SEQUENCE_LENGTH, ReservoirCell(320, spectral_radius=1.1, leaky=1),
+                 False, True, True, False,
+                 1.75, 2, 1.0, 1.75, 1)
+    return Builder.BuildClassification(CLASS_NUMBER)
+
+
+def LMU_ESN_comp():
+    Builder = ModelBuilder(PROBLEM_NAME, "LMU_ESN")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LMU(1, 256, SEQUENCE_LENGTH, ReservoirCell(212, spectral_radius=1.05, leaky=1), False,
+                False, False, True, False,
+                1)
+    return Builder.BuildClassification(CLASS_NUMBER)
+
+
+def LRMU_comp():
+    Builder = ModelBuilder(PROBLEM_NAME, "LRMU")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LRMU(1, 256, SEQUENCE_LENGTH, SimpleRNNCell(212, kernel_initializer=keras.initializers.GlorotUniform),
+                 False, False, True, False,
+                 1, 1, 1, 1,
+                 1)
+    return Builder.BuildClassification(CLASS_NUMBER)
+
+
+def LRMU_ESN_comp():
+    Builder = ModelBuilder(PROBLEM_NAME, "LRMU_ESN")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LRMU(1, 256, SEQUENCE_LENGTH, ReservoirCell(212, spectral_radius=1.1, leaky=1),
+                 False, False, True, False,
+                 1, 1, 1, 1, 1)
+    return Builder.BuildClassification(CLASS_NUMBER)
 
 
 def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=10):
     try:
         history, result = EvaluateModel(model, testName, training, test, batchSize, epochs, "accuracy")
     except Exception as e:
-        print(f"exception during evaluation {e} ")
+        print(f"exception during evaluation: {e} ")
         return
     # Serializing json
 
@@ -88,10 +93,15 @@ def RunEvaluation(batchSize=64, epochs=10):
         validation.ToCategoricalLabel()
         training.Concatenate(validation)
 
-    ModelEvaluation(LMU_Original_BestModel, "LMU_Original_60k", training, test, batchSize, epochs)
-    #ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN_60k", training, test, batchSize, epochs)
-    #ModelEvaluation(LMU_RE_BestModel, "LMU_RE_60k", training, test, batchSize, epochs)
-    #ModelEvaluation(LRMU_BestModel, "LRMU_60k", training, test, batchSize, epochs)
+    ModelEvaluation(LMU_Original, "LMU_50k", training, test, batchSize, epochs)
+
+    ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN_50k", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_BestModel, "LRMU_50k", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_ESN_BestModel, "LRMU_ESN_50k", training, test, batchSize, epochs)
+
+    ModelEvaluation(LMU_ESN_comp, "LMU_ESN_50k_comp", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_comp, "LRMU_50k_comp", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_ESN_comp, "LRMU_ESN_50k_comp", training, test, batchSize, epochs)
 
 
 def RunTuning(dataPartition=10000, max_trial=50):
@@ -100,14 +110,8 @@ def RunTuning(dataPartition=10000, max_trial=50):
     validation.ToCategoricalLabel()
     test.ToCategoricalLabel()
 
-    hyperModels = LRMUHyperModel("psMNIST-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH,CLASS_NUMBER, False,False)
+    hyperModels = HyperModel("psMNIST-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, CLASS_NUMBER, False, False)
 
-    #TunerTraining(hyperModels.LMU_ESN(), "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, False)
-    TunerTraining(hyperModels.LMU_RE(), "LMU_RE_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
-    #TunerTraining(hyperModels.LRMU(), "LRMU_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
-
-
-def PlotAll():
-    ReadAndPlot("./plots", PROBLEM_NAME, "LMU_ESN_60k", True)
-    ReadAndPlot("./plots", PROBLEM_NAME, "LMU_RE_60k", True)
-    ReadAndPlot("./plots", PROBLEM_NAME, "LRMU_60k", True)
+    TunerTraining(hyperModels.LMU_ESN(), "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
+    TunerTraining(hyperModels.LRMU(), "LRMU_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
+    TunerTraining(hyperModels.LRMU_ESN(), "LRMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)

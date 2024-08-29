@@ -1,11 +1,11 @@
 
-/Tests/plot/
+logs
+plots
+tmp
 
 Main/Layer/__pycache__/
-
-LMU/__pycache__/
-
+LMU/__pycache__
 LRMU/Layer/__pycache__/
-
 Main/Util/__pycache__/
-/logs/
+
+

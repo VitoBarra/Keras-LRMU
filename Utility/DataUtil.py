@@ -3,6 +3,7 @@ import numpy.random as rng
 import tensorflow as tf
 from typing import Type
 
+
 def TimeSeriesSampleRate(data, rate=2):
     '''
     :param data: array of shape (Data, TimeSeriesPoints)
@@ -33,7 +34,7 @@ class DataLabel(object):
             raise ValueError('Data and label must have the same length')
         self.Data = data
         self.Label = label
-        self.isCategorical=False
+        self.isCategorical = False
 
     def SplitDataset(self, validationParcent=0.15, testParcent=0.1):
         if validationParcent < 0 or testParcent < 0:
@@ -66,7 +67,7 @@ class DataLabel(object):
 
     def Concatenate(self, dataLabel):
         if self.isCategorical != dataLabel.isCategorical:
-            raise ValueError("each of the dataLabe class must same type of label")
+            raise ValueError("each of the dataLabel class must same type of label")
         self.Data = np.concatenate((self.Data, dataLabel.Data), axis=0)
         self.Label = np.concatenate((self.Label, dataLabel.Label), axis=0)
 
@@ -74,7 +75,8 @@ class DataLabel(object):
         rng.seed(seed)
         perm = rng.permutation(self.Data.shape[0])
         self.Data = self.Data[perm,]
+        self.Label = self.Label[perm,]
 
     def ToCategoricalLabel(self):
         self.Label = tf.keras.utils.to_categorical(self.Label)
-        self.isCategorical=True
+        self.isCategorical = True

@@ -23,6 +23,8 @@ def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=15
 
     # Load the MNIST dataset
     ((training_sample, training_label), (test_sample, test_labels)) = LoadMNISTData()
+    training_sample =training_sample/255
+    test_sample=test_sample/255
 
     # Reshape the data to the psMNIST format
     training_sample = training_sample.reshape(training_sample.shape[0], -1, 1)
@@ -37,19 +39,19 @@ def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=15
         training_sample = training_sample[:dataPartition]
         training_label = training_label[:dataPartition]
 
-        #Apply the permutation to the Data
+    #Apply the permutation to the Data
     training_sample = training_sample[:, perm]
     test_sample = test_sample[:, perm]
 
     # Create dataset objects for the training and test data
-    training_data_set = DataLabel(training_sample, training_label)
-    test_dataset = DataLabel(test_sample, test_labels)
+    training_set = DataLabel(training_sample, training_label)
+    test_set = DataLabel(test_sample, test_labels)
 
     # Shuffle the datasets if required
     if shuffle:
-        training_data_set.Shuffle()
-        test_dataset.Shuffle()
+        training_set.Shuffle()
+        test_set.Shuffle()
 
     # Split the training data into training and validation sets and return
-    training, validation = training_data_set.SplitIn2(validationSplit)
-    return training, validation, test_dataset
+    training_set, validation_set = training_set.SplitIn2(validationSplit)
+    return training_set, validation_set, test_set

@@ -5,6 +5,7 @@ services:
       - ./logs:/tf/logs
       - ./plots:/tf/plots
       - ./tmp:/tf/tmp
+      - ./:/tf/all
     deploy:
       resources:
         reservations:

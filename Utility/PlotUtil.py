@@ -5,15 +5,17 @@ from matplotlib import pyplot as plt
 import json
 
 
-def PlotModelLoss(history, plotTitle='Problems', path=None, filename=None):
+def PlotModelLossMSE(history, plotTitle='Problems', path=None, filename=None):
     plt.title(plotTitle)
 
-    plt.plot(history.history['loss'])
-    if hasattr(history.history, "val_loss"):
-        plt.plot(history.history['val_loss'])
-    plt.ylabel('loss')
+    plt.plot(history['loss'])
+    if hasattr(history, "val_loss"):
+        plt.plot(history['val_loss'])
+        plt.legend(['train', 'validation'], loc='upper left')
+    else:
+        plt.legend(['train'], loc='upper left')
+    plt.ylabel('loss(mse)')
     plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
     ShowOrSavePlot(path, filename)
 
 
@@ -24,18 +26,21 @@ def PlotModelAccuracy(history, plotTitle='Problems', path=None, filename=None):
 
     ax1.set_ylabel('loss')
     ax1.set_xlabel('epoch')
-    ax1.plot(history.history['loss'])
-    if hasattr(history.history, "val_loss"):
-        ax1.plot(history.history['val_loss'])
+    ax1.plot(history['loss'])
+    if hasattr(history, "val_loss"):
+        ax1.plot(history['val_loss'])
         ax1.legend(['train', 'validation'], loc='upper left')
     else:
         ax1.legend(['train'], loc='upper left')
 
     ax2.set_ylabel('accuracy')
     ax2.set_xlabel('epoch')
-    ax2.plot(history.history['accuracy'])
-    ax2.plot(history.history['val_accuracy'])
-    ax2.legend(['train', 'validation'], loc='upper left')
+    if hasattr(history, "val_accuracy"):
+        ax2.plot(history['val_accuracy'])
+        ax2.legend(['train', 'validation'], loc='upper left')
+    else:
+        ax1.legend(['train'], loc='upper left')
+    ax2.plot(history['accuracy'])
     ShowOrSavePlot(path, filename)
 
 
@@ -48,6 +53,7 @@ def ShowOrSavePlot(path=None, filename=None):
         if filename is None or filename == '':
             filename = 'model'
         plt.savefig(f"{path}/{filename}.png")
+        plt.clf()
 
 
 def SaveDataForPlotJson(path, problem_name, test_name, history, result):
@@ -66,7 +72,7 @@ def ReadDataForPlotJson(path, problem_name, test_name):
 
     with open(f"{dir}/history.bin", "rb") as inputfile:
         history = pickle.load(inputfile)
-    with open(f"{dir}/{test_name}/result.bin", "rb") as inputfile:
+    with open(f"{dir}/result.bin", "rb") as inputfile:
         result = pickle.load(inputfile)
     return history, result
 
@@ -75,14 +81,14 @@ def ReadAndPlot(path, problem_name, test_name, classification):
     dir=f"{path}/{problem_name}"
     try:
         history, result = ReadDataForPlotJson(path, problem_name, test_name)
-    except FileNotFoundError:
-            print(f"file {dir}/{test_name} not found")
-            return
+    except FileNotFoundError as e:
+        print(f"some file in  {dir}/{test_name} not found {e}")
+        return
 
     if classification:
         PlotModelAccuracy(history,test_name,dir,test_name)
     else:
-        PlotModelLoss(history,test_name,dir,test_name)
+        PlotModelLossMSE(history, test_name, dir, test_name)
 
 
 #
@@ -158,3 +164,13 @@ def PrityPlot(loss,mse=None,accuracy = None,baseline=None):
     plt.savefig("great.png", dpi=300)
 
 
+
+
+def ReadAndPlotAll(path,problemName,classification):
+    dataPath=f"{path}/{problemName}"
+    for dir in getDirectSubDir(dataPath):
+        ReadAndPlot(path, problemName, dir.name, classification)
+
+
+def getDirectSubDir(path):
+    return [f for f in os.scandir(path) if f.is_dir()]

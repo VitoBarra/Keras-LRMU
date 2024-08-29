@@ -14,14 +14,13 @@ if __name__ == "__main__":
     #     selectedGPU = GPUSelection.pick_gpu_lowest_memory()
     #     print("selected GPU:{selectedGPU}")
 
-    selectedGPU = "3"
+    selectedGPU = "1"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{selectedGPU}"
 
-    # for tau in [17, 30]:
-    #     #MackeyGlass.RunTuning(128,5000,tau,50)
-    #     MackeyGlass.RunEvaluation(128, 5000, tau , epochs=25)
-    #     MackeyGlass.PlotAll(128, 5000, tau)
+   #for tau in [17, 30]:
+        #MackeyGlass.RunTuning(128, 5000, tau, 50)
+        #MackeyGlass.RunEvaluation(128, 5000, tau , epochs=25)
 
     #psMNIST.RunTuning(10000)
     psMNIST.RunEvaluation()
-    # psMNIST.PlotAll()
+
