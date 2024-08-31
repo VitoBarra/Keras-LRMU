@@ -2,7 +2,15 @@ import os
 import shutil
 import keras_tuner
 import tensorflow.keras as ks
+from timeit import default_timer as timer
 
+class TimingCallback(ks.callbacks.Callback):
+    def __init__(self, logs={}):
+        self.logs=[]
+    def on_epoch_begin(self, epoch, logs={}):
+        self.starttime = timer()
+    def on_epoch_end(self, epoch, logs={}):
+        self.logs.append(timer()-self.starttime)
 
 def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
     model = buildModel()
@@ -16,13 +24,26 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
         save_best_only=True,
         initial_value_threshold=None
     )
+    early_stop = ks.callbacks.EarlyStopping(
+        monitor="loss",
+        min_delta=0,
+        patience=2,
+        verbose=0,
+        mode="auto",
+        baseline=1.0,
+        restore_best_weights=False,
+        start_from_epoch=0,
+    )
+
+    time_tracker= TimingCallback()
 
     history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,
                         epochs=epochs,
-                        callbacks=[model_checkpoint_callback]
+                        callbacks=[model_checkpoint_callback, early_stop,time_tracker]
                         )
     try:
+        history.history["time"]=time_tracker.logs
         model = ks.models.load_model(checkpoint_filepath)
         result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
         return history, result
@@ -56,13 +77,13 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         directory=f"{problemName}/tmp",
     )
 
-    earlyStop = ks.callbacks.EarlyStopping(
+    early_stop = ks.callbacks.EarlyStopping(
         monitor="val_loss",
         min_delta=0.01,
         patience=0,
         verbose=0,
         mode="auto",
-        baseline=2.0,
+        baseline=1.0,
         restore_best_weights=False,
         start_from_epoch=0,
     )
@@ -74,7 +95,7 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
             validation_data=(validation.Data, validation.Label),
             epochs=epochs,
             # Use the TensorBoard callback.
-            callbacks=[tensorboardCB, earlyStop],
+            callbacks=[tensorboardCB, early_stop],
         )
     except keras_tuner.errors.FatalError as e:
         print("serach failed")

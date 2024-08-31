@@ -77,8 +77,7 @@ def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=10):
     except Exception as e:
         print(f"exception during evaluation: {e} ")
         return
-    # Serializing json
-
+    print(f"total training time: {sum(history.history['time'])}s", )
     print(f"Test loss: {result[0]}")
     print(f"Test accuracy: {result[1]}")
     SaveDataForPlotJson("./plots", PROBLEM_NAME, testName, history, result)
@@ -93,11 +92,11 @@ def RunEvaluation(batchSize=64, epochs=10):
         validation.ToCategoricalLabel()
         training.Concatenate(validation)
 
-    ModelEvaluation(LMU_Original, "LMU_50k", training, test, batchSize, epochs)
+    #ModelEvaluation(LMU_Original, "LMU_50k", training, test, batchSize, epochs)
 
-    ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN_50k", training, test, batchSize, epochs)
-    ModelEvaluation(LRMU_BestModel, "LRMU_50k", training, test, batchSize, epochs)
-    ModelEvaluation(LRMU_ESN_BestModel, "LRMU_ESN_50k", training, test, batchSize, epochs)
+    # ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN_50k", training, test, batchSize, epochs)
+    # ModelEvaluation(LRMU_BestModel, "LRMU_50k", training, test, batchSize, epochs)
+    # ModelEvaluation(LRMU_ESN_BestModel, "LRMU_ESN_50k", training, test, batchSize, epochs)
 
     ModelEvaluation(LMU_ESN_comp, "LMU_ESN_50k_comp", training, test, batchSize, epochs)
     ModelEvaluation(LRMU_comp, "LRMU_50k_comp", training, test, batchSize, epochs)

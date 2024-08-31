@@ -1,7 +1,7 @@
 import os
 
-import Problems.psMNIST.psMNIST as psMNIST
-import Problems.MackeyGlass.MackeyGlass as MackeyGlass
+import Problems.psMNIST as psMNIST
+import Problems.MackeyGlass as MackeyGlass
 import Utility.GPUSelection as GPUSelection
 from Utility.Debug import PrintAvailableGPU
 
@@ -17,10 +17,10 @@ if __name__ == "__main__":
     selectedGPU = "1"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{selectedGPU}"
 
-   #for tau in [17, 30]:
-        #MackeyGlass.RunTuning(128, 5000, tau, 50)
-        #MackeyGlass.RunEvaluation(128, 5000, tau , epochs=25)
+    for tau in [17, 30]:
+        MackeyGlass.models.RunEvaluation(128, 5000, tau , epochs=  25)
+        #MackeyGlass.models.RunTuning(128, 5000, tau, 50)
 
-    #psMNIST.RunTuning(10000)
-    psMNIST.RunEvaluation()
+    #psMNIST.models.RunTuning(10000)
+    psMNIST.models.RunEvaluation(epochs=15)
 
