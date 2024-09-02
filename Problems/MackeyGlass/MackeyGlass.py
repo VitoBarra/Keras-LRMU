@@ -46,7 +46,7 @@ def LRMU_T17_BestModel():
 def LRMU_ESN_T17_BestModel():
     Builder = ModelBuilder(PROBLEM_NAME, "LRMU_ESN")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LRMU(4, 1, 144, ReservoirCell(320, spectral_radius=1.25, leaky=0.5),
+    Builder.LRMU(4, 1, 144, ReservoirCell(320, spectral_radius=1, leaky=0.5),
                  True, False, True, True,
                  0.5, 1.5, 0.75, 2, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION)
@@ -72,7 +72,7 @@ def LRMU_T30_BestModel():
 def LRMU_ESN_T30_BestModel():
     Builder = ModelBuilder(PROBLEM_NAME, "LRMU_ESN")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LRMU(32, 1, 80, ReservoirCell(128, spectral_radius=0.9, leaky=0.8),
+    Builder.LRMU(32, 1, 80, ReservoirCell(128, spectral_radius=0.99, leaky=0.8),
                  True, False, False, True,
                  0.5, 1.25, 1.0, 1.25, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION)
@@ -103,15 +103,15 @@ def RunEvaluation(sample=128, sequenceLength=5000, tau=17, batchSize=64, epochs=
     training.Concatenate(validation)
 
     if tau == 17:
-        ModelEvaluation(LMU_T17_Original_1Layer, f"LMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-        ModelEvaluation(LMU_ESN_T17_BestModel, f"LMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-        ModelEvaluation(LRMU_T17_BestModel, f"LRMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
+        #ModelEvaluation(LMU_T17_Original_1Layer, f"LMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
+       # ModelEvaluation(LMU_ESN_T17_BestModel, f"LMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
+        #ModelEvaluation(LRMU_T17_BestModel, f"LRMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
         ModelEvaluation(LRMU_ESN_T17_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize,
                         epochs)
     elif tau == 30:
-        ModelEvaluation(LMU_T30_Original_1Layer, f"LMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        ModelEvaluation(LMU_ESN_T30_BestModel, f"LMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        ModelEvaluation(LRMU_T30_BestModel, f"LRMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
+        #ModelEvaluation(LMU_T30_Original_1Layer, f"LMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
+        #ModelEvaluation(LMU_ESN_T30_BestModel, f"LMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
+        #ModelEvaluation(LRMU_T30_BestModel, f"LRMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
         ModelEvaluation(LRMU_ESN_T30_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize,
                         epochs)
 
@@ -121,11 +121,11 @@ def RunTuning(sample=128, sequenceLength=5000, tau=17, max_trial=50):
     training, validation, test = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
 
     hyperModels = HyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, None, True, True)
+    TunerTraining(hyperModels.LMU(), f"LMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
+                  validation, 5, max_trial, True)
     TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, 5, max_trial, False)
+                  validation, 5, max_trial, True)
     TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, 5, max_trial, False)
+                  validation, 5, max_trial, True)
     TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation,
-                  5,
-                  max_trial, False)
+                  validation,5,max_trial, True)

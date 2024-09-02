@@ -18,9 +18,9 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{selectedGPU}"
 
     for tau in [17, 30]:
-        MackeyGlass.models.RunEvaluation(128, 5000, tau , epochs=  25)
-        #MackeyGlass.models.RunTuning(128, 5000, tau, 50)
+        #MackeyGlass.models.RunEvaluation(128, 5000, tau , epochs=  25)
+        MackeyGlass.models.RunTuning(128, 5000, tau, 50)
 
     #psMNIST.models.RunTuning(10000)
-    psMNIST.models.RunEvaluation(epochs=15)
+    #psMNIST.models.RunEvaluation(epochs=15)
 

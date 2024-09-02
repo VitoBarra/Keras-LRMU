@@ -28,6 +28,13 @@ class HyperModel(kt.HyperModel):
         self.UseESN = None
         self.UseLRMU = None
 
+    def LMU(self):
+        self.ModelName = "LMU"
+        self.UseLRMU = False
+        self.UseESN = False
+        self.CreateModelBuilder()
+        return self
+
     def LMU_ESN(self, useLeaky=True, useInputScaler=False):
         self.ModelName = "LMU-ESN"
         self.UseLRMU = False
@@ -60,7 +67,7 @@ class HyperModel(kt.HyperModel):
         if not self.UseESN:
             hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(self.Seed))
         else:
-            spectraRadius = hp.Float("ESN_spectraRadius", min_value=0.8, max_value=1.3, step=0.05)
+            spectraRadius = hp.Float("ESN_spectraRadius", min_value=0.8, max_value=1.1, step=0.025)
             leaky = hp.Float("ESN_leaky", min_value=0.5, max_value=1, step=0.1) if self.UseLeaky else 1
             inputScaler = hp.Float("ESN_inputScaler", min_value=0.5, max_value=2,
                                    step=0.25) if self.UseInputScaler else 1
@@ -121,14 +128,15 @@ class HyperModel(kt.HyperModel):
         else:
             self.Builder.LMU(memoryDim, order, theta, hiddenCell,False,
                              memoryToMemory, inputToHiddenCell, hiddenToMemory,useBias,
-                             layerN )
+                             layerN)
 
 
         if self.ModelType == 1:
-            return self.Builder.BuildPrediction().composeModel().CopilePrediction()
+            return self.Builder.BuildPrediction(1)
         elif self.ModelType == 2:
-            return self.Builder.BuildClassification(self.ClassNumber).composeModel().CompileClassification()
+            return self.Builder.BuildClassification(self.ClassNumber)
         else:
+            print(f"\nModelType:{self.ModelType}\n")
             return None
 
     def build(self, hp):
