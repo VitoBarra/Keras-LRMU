@@ -7,7 +7,8 @@ from Utility.ModelBuilder import ModelBuilder
 
 class HyperModel(kt.HyperModel):
 
-    def __init__(self, hyperModelName, problemName, sequenceLength, classNuber=None, searchTheta=True, useLeaky= True, seed=0):
+    def __init__(self, hyperModelName, problemName, sequenceLength, classNuber=None, searchTheta=True, useLeaky=True,
+                 seed=0):
         super().__init__(hyperModelName)
         self.UseLeaky = useLeaky
         self.UseInputScaler = False
@@ -80,20 +81,21 @@ class HyperModel(kt.HyperModel):
         if self.ModelType == 1:
             memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32])
             order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
+            theta = hp.Int("theta", min_value=4, max_value=64, step=4) if self.SearchTheta else self.SequenceLength
         else:
-            memoryDim = hp.Int("memoryDim",min_value=128, max_value=256, step=32)
+            memoryDim = hp.Int("memoryDim", min_value=128, max_value=256, step=32)
             order = hp.Int("order", min_value=128, max_value=512, step=64)
-        theta = hp.Int("theta", min_value=16, max_value=258, step=16) if self.SearchTheta else self.SequenceLength
+            theta = hp.Int("theta", min_value=16, max_value=258, step=16) if self.SearchTheta else self.SequenceLength
         hiddenUnit = hp.Int("hiddenUnit", min_value=16, max_value=16 * 20, step=16)
         return layerN, memoryDim, order, theta, self.selectCell(hp, hiddenUnit)
 
-    def selectScaler(self, hp, reservoirEncoders, memoryToMemory, hiddenToMemory, useBias):
+    def selectScaler(self, hp, memoryToMemory, hiddenToMemory, useBias):
         InputEncoderScaler = None
         memoryEncoderScaler = None
         hiddenEncoderScaler = None
         biasScaler = None
 
-        if reservoirEncoders:
+        if self.UseLRMU:
             InputEncoderScaler = hp.Float("InputEncoderScaler", min_value=0.5, max_value=2, step=0.25)
             if memoryToMemory:
                 memoryEncoderScaler = hp.Float("memoryEncoderScaler", min_value=0.5, max_value=2, step=0.25)
@@ -109,8 +111,7 @@ class HyperModel(kt.HyperModel):
         hiddenToMemory = hp.Boolean("hiddenToMemory")
         inputToHiddenCell = hp.Boolean("inputToHiddenCell")
         useBias = hp.Boolean("useBias")
-        return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, self.UseLRMU,
-                                                                                             memoryToMemory,
+        return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, memoryToMemory,
                                                                                              hiddenToMemory, useBias)
 
     def constructHyperModel(self, hp):
@@ -126,10 +127,9 @@ class HyperModel(kt.HyperModel):
                               memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler,
                               layerN)
         else:
-            self.Builder.LMU(memoryDim, order, theta, hiddenCell,False,
-                             memoryToMemory, inputToHiddenCell, hiddenToMemory,useBias,
+            self.Builder.LMU(memoryDim, order, theta, hiddenCell, False,
+                             memoryToMemory, inputToHiddenCell, hiddenToMemory, useBias,
                              layerN)
-
 
         if self.ModelType == 1:
             return self.Builder.BuildPrediction(1)

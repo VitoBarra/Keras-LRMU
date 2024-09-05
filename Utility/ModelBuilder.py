@@ -8,6 +8,7 @@ class ModelBuilder:
 
     def __init__(self, problemName, modelVariant, seed=0):
         self.Input = None
+        self.Feature = None
         self.Model = None
         self.ProblemName = problemName
         self.ModelVariant = modelVariant
@@ -53,7 +54,7 @@ class ModelBuilder:
         self.Outputs = ks.layers.Dense(unit, activation=acctivation, kernel_initializer=GlorotUniform(self.Seed))(
             self.Feature)
         self.__ComposeModel()
-        return self.__Compile("adam", "mse", ["mse"])
+        return self.__Compile("adam", "mse", ["mae"])
 
     def __ComposeModel(self):
         self.Model = ks.Model(inputs=self.Input, outputs=self.Outputs,

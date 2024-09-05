@@ -3,6 +3,7 @@ import shutil
 import keras_tuner
 import tensorflow.keras as ks
 from timeit import default_timer as timer
+from GlobalConfig import *
 
 class TimingCallback(ks.callbacks.Callback):
     def __init__(self, logs={}):
@@ -13,9 +14,10 @@ class TimingCallback(ks.callbacks.Callback):
         self.logs.append(timer()-self.starttime)
 
 def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
-    model = buildModel()
 
-    checkpoint_filepath = f"./tmp/ckpt/{testName}/model.keras"
+
+    # Define callback.
+    checkpoint_filepath = f"{TEMP_DIR}/{testName}/model.keras"
     model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
         monitor=monitorStat,
@@ -37,6 +39,8 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
 
     time_tracker= TimingCallback()
 
+    # Build model.
+    model = buildModel()
     history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,
                         epochs=epochs,
@@ -45,16 +49,20 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
     try:
         history.history["time"]=time_tracker.logs
         model = ks.models.load_model(checkpoint_filepath)
+        model.save(f"{BEST_MODEL_DIR}/{testName}/best_model.h5")
         result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
         return history, result
     except FileNotFoundError:
         print("no best model found")
         raise
+    except Exception as e:
+        print(e)
+        raise
 
 
 def TunerTraining(hyperModel, tuningName, problemName, training, validation, epochs=10, maxTrial=100,
                   override_test=False):
-    testDir = f"./logs/{problemName}/{tuningName}"
+    testDir = f"{TUNING_DIR}/{problemName}/{tuningName}"
     folder_already_exists = os.path.exists(testDir)
 
     if folder_already_exists:
@@ -73,7 +81,7 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         max_consecutive_failed_trials=8,
 
         objective="val_loss",
-        # Set a directory to store the intermediate results.
+        # Set a directory to store the intermediate results using Docker this isn't saved and that's intended
         directory=f"{problemName}/tmp",
     )
 
@@ -105,7 +113,12 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         print(e)
         return
 
-    best_model = tuner.get_best_models(num_models=1)[0]
-    best_model.save(f"./logs/{problemName}/{tuningName}/best_model.h5")
+    try:
+        best_model = tuner.get_best_models()
+        best_model.save(f"{BEST_MODEL_DIR}/{tuningName}/best_model_tuning.h5")
+        best_model.summary()
+    except Exception as e:
+        print(e)
 
     tuner.results_summary()
+    return

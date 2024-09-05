@@ -85,8 +85,7 @@ class LRMUCell(keras.layers.Layer):
                                                                                    axis=0)
 
         if self.MemoryToMemory:
-            self.RecurrentMemoryKernel = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim),
-                                                           scaler=self.MemoryEncoderScaler)
+            self.RecurrentMemoryKernel = self.createWeight(shape=(self.Order * self.MemoryDim, self.MemoryDim),scaler=self.MemoryEncoderScaler)
 
         if self.UseBias:
             self.Bias = self.createWeight(shape=(self.MemoryDim,), scaler=self.BiasScaler)
@@ -191,8 +190,7 @@ class LRMU(keras.layers.Layer):
 
     def __init__(self, memoryDimension, order, theta, hiddenCell=None,
                  hiddenToMemory=False, memoryToMemory=False, inputToHiddenCell=False, useBias=False,
-                 memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0,
-                 InputEncoderScaler=1.0, biasScaler=1.0,
+                 memoryEncoderScaler=1.0, hiddenEncoderScaler=1.0,InputEncoderScaler=1.0, biasScaler=1.0,
                  seed=0, returnSequences=False, **kwargs):
         super().__init__(**kwargs)
         self.MemoryDim = memoryDimension

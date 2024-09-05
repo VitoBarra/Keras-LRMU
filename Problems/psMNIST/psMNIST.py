@@ -8,6 +8,7 @@ from Utility.HyperModel import HyperModel
 from Utility.ModelBuilder import ModelBuilder
 import tensorflow.keras as ks
 from tensorflow.keras.layers import SimpleRNNCell, Dense
+from GlobalConfig import *
 
 
 def LMU_Original():
@@ -80,7 +81,11 @@ def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=10):
     print(f"total training time: {sum(history.history['time'])}s", )
     print(f"Test loss: {result[0]}")
     print(f"Test accuracy: {result[1]}")
-    SaveDataForPlotJson("./plots", PROBLEM_NAME, testName, history, result)
+    SaveDataForPlotJson(PLOTS_DIR, PROBLEM_NAME, testName, history, result)
+
+
+def RunEvaluationSaved():
+    model = ks.models.load_model("./logs/bestModel/LMU_ESN_50k.h5")
 
 
 def RunEvaluation(batchSize=64, epochs=10):
@@ -104,6 +109,7 @@ def RunEvaluation(batchSize=64, epochs=10):
 
 
 def RunTuning(dataPartition=10000, max_trial=50):
+    lengthName = f"{str(dataPartition)[0:1]}k"
     training, validation, test = psMNISTDataset(True, 0.1, dataPartition)
     training.ToCategoricalLabel()
     validation.ToCategoricalLabel()
@@ -111,6 +117,6 @@ def RunTuning(dataPartition=10000, max_trial=50):
 
     hyperModels = HyperModel("psMNIST-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, CLASS_NUMBER, False, False)
 
-    TunerTraining(hyperModels.LMU_ESN(), "LMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
-    TunerTraining(hyperModels.LRMU(), "LRMU_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
-    TunerTraining(hyperModels.LRMU_ESN(), "LRMU_ESN_Tuning_15k", PROBLEM_NAME, training, validation, 5, max_trial, True)
+    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, 5, max_trial, True)
+    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, 5, max_trial, True)
+    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, 5, max_trial, True)

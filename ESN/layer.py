@@ -52,7 +52,7 @@ class ReservoirCell(keras.layers.Layer):
         input_part = tf.matmul(inputs, self.kernel)
         state_part = tf.matmul(prev_output, self.recurrent_kernel)
 
-        output =(1 - self.leaky) * prev_output
+        output = (1 - self.leaky) * prev_output
         if self.activation is not None:
             output += self.leaky * self.activation(input_part + self.bias + state_part)
         else:
@@ -74,8 +74,8 @@ class ReservoirCell(keras.layers.Layer):
             "seed": self.seed})
 
         return config
-    
+
     @classmethod
     def from_config(cls, config):
-        config["activation"]= tf.keras.activations.deserialize(config["activation"])
+        config["activation"] = tf.keras.activations.deserialize(config["activation"])
         return super().from_config(config)

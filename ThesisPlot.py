@@ -5,12 +5,7 @@ from Utility.PlotUtil import *
 import seaborn as sns
 import numpy as np
 import numpy.random as rng
-import tensorflow
-
-PLOT_PATH="./plots"
-PLOT_DATAVIS_PATH = f"{PLOT_PATH}/DatasetVisualization"
-
-
+from GlobalConfig import *
 
 def plot_mackey_glass(X, Y, title=""):
     plt.figure(figsize=(14, 8))
@@ -65,5 +60,5 @@ if __name__ == "__main__":
     PlotMNISTVariant()
     for tau in [17, 30]:
         PlotMarkeyGlass(tau)
-    ReadAndPlotAll(PLOT_PATH, psMNIST.conf.PROBLEM_NAME, True)
-    ReadAndPlotAll(PLOT_PATH, MackeyGlass.Config.PROBLEM_NAME, False)
+    ReadAndPlotAll(PLOTS_DIR, psMNIST.conf.PROBLEM_NAME, True)
+    ReadAndPlotAll(PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)

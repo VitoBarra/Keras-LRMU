@@ -7,37 +7,30 @@ from ESN.layer import *
 from Utility.HyperModel import HyperModel
 from Utility.ModelBuilder import ModelBuilder
 from tensorflow.keras.layers import SimpleRNNCell
-import LMU.layers
+from GlobalConfig import *
 
 
-def LMU_T17_Original_1Layer():
+
+def LMU_T17_BestModel():
+    #Done
     Builder = ModelBuilder(PROBLEM_NAME, "LMU")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LMU(1, 4, 4, SimpleRNNCell(units=49), False,
-                False, False, False, True, 1)
-    return Builder.BuildPrediction(c.PREDICTION_DIMENSION)
-
-
-def LMU_T30_Original_1Layer():
-    Builder = ModelBuilder(PROBLEM_NAME, "LMU")
-    Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LMU(1, 4, 4, SimpleRNNCell(units=49), False,
-                False, False, False, True, 1)
+    Builder.LMU(2, 1, 44, SimpleRNNCell(176), False,
+                True, False, False, False, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION)
-
-
 def LMU_ESN_T17_BestModel():
+    #Done
     Builder = ModelBuilder(PROBLEM_NAME, "LMU_ESN")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LMU(32, 1, 112, ReservoirCell(64, spectral_radius=0.9, leaky=0.9), False,
-                True, True, False, False, 1)
+    Builder.LMU(4, 20, 56, ReservoirCell(240, spectral_radius=0.95, leaky=0.7), False,
+                False, True, False, True, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION)
 
 
 def LRMU_T17_BestModel():
     Builder = ModelBuilder(PROBLEM_NAME, "LRMU")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LRMU(4, 8, 240, SimpleRNNCell(64, kernel_initializer=keras.initializers.GlorotUniform),
+    Builder.LRMU(2, 48, 28, SimpleRNNCell(64, kernel_initializer=keras.initializers.GlorotUniform),
                  False, False, False, False,
                  1.5, 1, 1.5, 0.5, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION)
@@ -52,6 +45,13 @@ def LRMU_ESN_T17_BestModel():
     return Builder.BuildPrediction(PREDICTION_DIMENSION)
 
 
+
+def LMU_T30_BestModel():
+    Builder = ModelBuilder(PROBLEM_NAME, "LMU")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    Builder.LMU(2, 1, 44, SimpleRNNCell(176), False,
+                True, False, False, False, 1)
+    return Builder.BuildPrediction(PREDICTION_DIMENSION)
 def LMU_ESN_T30_BestModel():
     Builder = ModelBuilder(PROBLEM_NAME, "LMU_ESN")
     Builder.inputLayer(SEQUENCE_LENGTH)
@@ -89,7 +89,7 @@ def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=15):
     print(f"test mse:{result[1]}")
 
     try:
-        SaveDataForPlotJson("./plots", PROBLEM_NAME, testName, history, result)
+        SaveDataForPlotJson(PLOTS_DIR, PROBLEM_NAME, testName, history, result)
     except:
         print("something went wrong during plot data saving ")
         raise
@@ -116,16 +116,17 @@ def RunEvaluation(sample=128, sequenceLength=5000, tau=17, batchSize=64, epochs=
                         epochs)
 
 
-def RunTuning(sample=128, sequenceLength=5000, tau=17, max_trial=50):
+def RunTuning(sample=128, sequenceLength=5000, tau=17, epoch=5,max_trial=50):
     lengthName = f"{str(sequenceLength)[0]}k"
     training, validation, test = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
 
     hyperModels = HyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, None, True, True)
-    TunerTraining(hyperModels.LMU(), f"LMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, 5, max_trial, True)
+    # TunerTraining(hyperModels.LMU(), f"LMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
+    #               validation, epoch, max_trial, True)
     TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, 5, max_trial, True)
+                  validation,   epoch, max_trial, True)
+    print("arrivat qui")
     TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, 5, max_trial, True)
+                  validation, epoch, max_trial, True)
     TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation,5,max_trial, True)
+                  validation,epoch,max_trial, True)

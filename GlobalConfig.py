@@ -1,0 +1,6 @@
+LOGS_DIR = "./logs"
+BEST_MODEL_DIR = f"{LOGS_DIR}/best_model"
+PLOTS_DIR = f"{LOGS_DIR}/plots"
+TEMP_DIR = f"{LOGS_DIR}/tmp"
+PLOT_DATAVIS_PATH = f"{PLOTS_DIR}/DatasetVisualization"
+TUNING_DIR = f"{LOGS_DIR}/Tuning"
