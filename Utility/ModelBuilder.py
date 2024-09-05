@@ -22,11 +22,11 @@ class ModelBuilder:
              hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
              memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler, layerN):
         feature = LRMU(memoryDim, order, theta, hiddenCell, hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
-                       memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler, self.Seed,
+                       hiddenEncoderScaler, memoryEncoderScaler, inputEncoderScaler, biasScaler, self.Seed,
                        returnSequences=layerN > 1)(self.Input)
         for i in range(layerN - 1):
             feature = LRMU(memoryDim, order, theta, hiddenCell, hiddenToMemory, memoryToMemory, inputToHiddenCell,
-                           useBias, memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler, self.Seed,
+                           useBias, hiddenEncoderScaler, memoryEncoderScaler, inputEncoderScaler, biasScaler, self.Seed,
                            returnSequences=i != layerN - 2)(feature)
         self.Feature = feature
         return self

@@ -3,6 +3,12 @@ import tensorflow.keras as ks
 from ESN.layer import *
 from tensorflow.keras.initializers import *
 from Utility.ModelBuilder import ModelBuilder
+from enum import Enum
+
+
+class ModelType(Enum):
+    Classification = 1
+    Prediction = 2
 
 
 class HyperModel(kt.HyperModel):
@@ -18,11 +24,7 @@ class HyperModel(kt.HyperModel):
         self.SearchTheta = searchTheta
 
         self.ClassNumber = classNuber
-
-        if classNuber is None:
-            self.ModelType = 1
-        else:
-            self.ModelType = 2
+        self.ModelType = ModelType.Classification if classNuber is not None else ModelType.Prediction
 
         self.Builder = None
         self.ModelName = None
@@ -78,7 +80,7 @@ class HyperModel(kt.HyperModel):
 
     def LMUParam(self, hp):
         layerN = 1
-        if self.ModelType == 1:
+        if self.ModelType == ModelType.Prediction:
             memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32])
             order = hp.Choice("order", values=[1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64])
             theta = hp.Int("theta", min_value=4, max_value=64, step=4) if self.SearchTheta else self.SequenceLength
@@ -104,7 +106,7 @@ class HyperModel(kt.HyperModel):
             if useBias:
                 biasScaler = hp.Float("biasScaler", min_value=0.5, max_value=2, step=0.25)
 
-        return memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler
+        return hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler
 
     def selectConnection(self, hp):
         memoryToMemory = hp.Boolean("memoryToMemory")
@@ -118,22 +120,22 @@ class HyperModel(kt.HyperModel):
 
         layerN, memoryDim, order, theta, hiddenCell = self.LMUParam(hp)
         memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = self.selectConnection(hp)
-        (memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler) = scaler
+        (hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler) = scaler
 
         self.Builder.inputLayer(self.SequenceLength)
         if self.UseLRMU:
             self.Builder.LRMU(memoryDim, order, theta, hiddenCell,
-                              memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias,
-                              memoryEncoderScaler, hiddenEncoderScaler, InputEncoderScaler, biasScaler,
+                              hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                              hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler,
                               layerN)
         else:
             self.Builder.LMU(memoryDim, order, theta, hiddenCell, False,
-                             memoryToMemory, inputToHiddenCell, hiddenToMemory, useBias,
+                             hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
                              layerN)
 
-        if self.ModelType == 1:
+        if self.ModelType == ModelType.Prediction:
             return self.Builder.BuildPrediction(1)
-        elif self.ModelType == 2:
+        elif self.ModelType == ModelType.Classification:
             return self.Builder.BuildClassification(self.ClassNumber)
         else:
             print(f"\nModelType:{self.ModelType}\n")

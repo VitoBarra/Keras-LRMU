@@ -123,10 +123,9 @@ def RunTuning(sample=128, sequenceLength=5000, tau=17, epoch=5,max_trial=50):
     hyperModels = HyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, None, True, True)
     # TunerTraining(hyperModels.LMU(), f"LMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
     #               validation, epoch, max_trial, True)
-    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation,   epoch, max_trial, True)
-    print("arrivat qui")
+    # TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
+    #               validation,   epoch, max_trial, True)
     TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
                   validation, epoch, max_trial, True)
     TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation,epoch,max_trial, True)
+                  validation,epoch,max_trial, False)

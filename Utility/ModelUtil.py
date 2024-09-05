@@ -83,6 +83,7 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         objective="val_loss",
         # Set a directory to store the intermediate results using Docker this isn't saved and that's intended
         directory=f"{problemName}/tmp",
+        overwrite=True
     )
 
     early_stop = ks.callbacks.EarlyStopping(
@@ -114,9 +115,9 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         return
 
     try:
-        best_model = tuner.get_best_models()
-        best_model.save(f"{BEST_MODEL_DIR}/{tuningName}/best_model_tuning.h5")
+        best_model = tuner.get_best_models(num_models=1)[0]
         best_model.summary()
+        best_model.save(f"{BEST_MODEL_DIR}/{tuningName}/best_model_tuning.keras")
     except Exception as e:
         print(e)
 
