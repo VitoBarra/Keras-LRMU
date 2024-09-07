@@ -8,8 +8,17 @@ from Utility.HyperModel import HyperModel
 from Utility.ModelBuilder import ModelBuilder
 from tensorflow.keras.layers import SimpleRNNCell
 from GlobalConfig import *
+import tensorflow.keras as keras
 
 
+
+def FF_BaseLine():
+    inputs = keras.Input(shape=(SEQUENCE_LENGTH,))
+    output = keras.layers.Dense(1, activation='linear')(inputs)
+    model = keras.Model(inputs=inputs, outputs=output)
+    model.summary()
+    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+    return model
 
 def LMU_T17_BestModel():
     #Done
@@ -86,10 +95,10 @@ def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=15):
         raise
     print(f"total training time:{sum(history.history['time'])}s")
     print(f"test loss:{result[0]}")
-    print(f"test mse:{result[1]}")
+    print(f"test mae:{result[1]}")
 
     try:
-        SaveDataForPlotJson(PLOTS_DIR, PROBLEM_NAME, testName, history, result)
+        SaveDataForPlotJson(DATA_DIR, PROBLEM_NAME, testName, history, result)
     except:
         print("something went wrong during plot data saving ")
         raise
@@ -102,19 +111,21 @@ def RunEvaluation(sample=128, sequenceLength=5000, tau=17, batchSize=64, epochs=
 
     training.Concatenate(validation)
 
+
     if tau == 17:
-        ModelEvaluation(LMU_T30_BestModel, f"LMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-        ModelEvaluation(LMU_ESN_T17_BestModel, f"LMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-        ModelEvaluation(LRMU_T17_BestModel, f"LRMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-        ModelEvaluation(LRMU_ESN_T17_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize,
+        ModelEvaluation(LMU_T30_BestModel, f"LMU_{sample}_{lengthName}_T17_ReLu", training, test, batchSize, epochs)
+        ModelEvaluation(LMU_ESN_T17_BestModel, f"LMU_ESN_{sample}_{lengthName}_T17_ReLu", training, test, batchSize, epochs)
+        ModelEvaluation(LRMU_T17_BestModel, f"LRMU_{sample}_{lengthName}_T17_ReLu", training, test, batchSize, epochs)
+        ModelEvaluation(LRMU_ESN_T17_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T17_ReLu", training, test, batchSize,
                         epochs)
     elif tau == 30:
-        ModelEvaluation(LMU_T30_BestModel, f"LMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        ModelEvaluation(LMU_ESN_T30_BestModel, f"LMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        ModelEvaluation(LRMU_T30_BestModel, f"LRMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        ModelEvaluation(LRMU_ESN_T30_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize,
+        ModelEvaluation(LMU_T30_BestModel, f"LMU_{sample}_{lengthName}_T30_ReLu", training, test, batchSize, epochs)
+        ModelEvaluation(LMU_ESN_T30_BestModel, f"LMU_ESN_{sample}_{lengthName}_T30_ReLu", training, test, batchSize, epochs)
+        ModelEvaluation(LRMU_T30_BestModel, f"LRMU_{sample}_{lengthName}_T30_ReLu", training, test, batchSize, epochs)
+        ModelEvaluation(LRMU_ESN_T30_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T30_ReLu", training, test, batchSize,
                         epochs)
 
+    ModelEvaluation(FF_BaseLine, f"FF_{sample}_{lengthName}", training, test, batchSize, epochs)
 
 def RunTuning(sample=128, sequenceLength=5000, tau=17, epoch=5,max_trial=50):
     lengthName = f"{str(sequenceLength)[0]}k"

@@ -21,6 +21,7 @@ if __name__ == "__main__":
         MackeyGlass.models.RunEvaluation(128, 5000, tau , epochs=  500)
         #MackeyGlass.models.RunTuning(128, 5000, tau, 5,50)
 
+
     #psMNIST.models.RunTuning(10000)
     #psMNIST.models.RunEvaluation(epochs=15)
 

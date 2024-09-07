@@ -81,7 +81,7 @@ def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=10):
     print(f"total training time: {sum(history.history['time'])}s", )
     print(f"Test loss: {result[0]}")
     print(f"Test accuracy: {result[1]}")
-    SaveDataForPlotJson(PLOTS_DIR, PROBLEM_NAME, testName, history, result)
+    SaveDataForPlotJson(DATA_DIR, PROBLEM_NAME, testName, history, result)
 
 
 def RunEvaluationSaved():

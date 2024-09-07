@@ -34,7 +34,7 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
         patience=2,
         verbose=0,
         mode="auto",
-        baseline=1.0,
+        baseline=2.0,
         restore_best_weights=False,
         start_from_epoch=0,
     )
@@ -51,7 +51,9 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
     try:
         history.history["time"] = time_tracker.logs
         model = ks.models.load_model(checkpoint_filepath)
-        model.save(f"{BEST_MODEL_DIR}/{testName}/best_model.keras")
+        directory = f"{BEST_MODEL_DIR}/{testName}"
+        os.makedirs(directory, exist_ok=True)
+        model.save(f"{directory}/best_model.keras")
         result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
         return history, result
     except FileNotFoundError:
@@ -119,7 +121,9 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
     try:
         best_model = tuner.get_best_models(num_models=1)[0]
         best_model.summary()
-        best_model.save(f"{BEST_MODEL_DIR}/{tuningName}/best_model_tuning.keras")
+        directory = f"{BEST_MODEL_DIR}/{tuningName}"
+        os.makedirs(directory, exist_ok=True)
+        best_model.save(f"{directory}/best_model_tuning.keras")
     except Exception as e:
         print(e)
 

@@ -50,7 +50,7 @@ class ModelBuilder:
         self.__ComposeModel()
         return self.__Compile("adam", "categorical_crossentropy", ["accuracy"])
 
-    def BuildPrediction(self, unit=1, acctivation="linear"):
+    def BuildPrediction(self, unit=1, acctivation="relu"):
         self.Outputs = ks.layers.Dense(unit, activation=acctivation, kernel_initializer=GlorotUniform(self.Seed))(
             self.Feature)
         self.__ComposeModel()

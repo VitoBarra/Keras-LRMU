@@ -61,13 +61,13 @@ def SaveDataForPlotJson(path, problem_name, test_name, history, result):
     os.makedirs(dir, exist_ok=True)
     # Writing to sample.json
     with open(f"{dir}/history.bin", "wb") as outfile:
-        pickle.dump(history.history,outfile)
+        pickle.dump(history.history, outfile)
     with open(f"{dir}/result.bin", "wb") as outfile:
-        pickle.dump(result,outfile)
+        pickle.dump(result, outfile)
 
 
-def ReadDataForPlotJson(path, problem_name, test_name):
-    dir =f"{path}/{problem_name}/{test_name}"
+def ReadDataForPlotBin(data_path, problem_name, test_name):
+    dir = f"{data_path}/{problem_name}/{test_name}"
     # Writing to sample.json
 
     with open(f"{dir}/history.bin", "rb") as inputfile:
@@ -77,24 +77,7 @@ def ReadDataForPlotJson(path, problem_name, test_name):
     return history, result
 
 
-def ReadAndPlot(path, problem_name, test_name, classification):
-    dir=f"{path}/{problem_name}"
-    try:
-        history, result = ReadDataForPlotJson(path, problem_name, test_name)
-    except FileNotFoundError as e:
-        print(f"some file in  {dir}/{test_name} not found {e}")
-        return
-
-    if classification:
-        PlotModelAccuracy(history,test_name,dir,test_name)
-    else:
-        PlotModelLossMSE(history, test_name, dir, test_name)
-
-
-#
-# #Original code from: https://www.practicaldatascience.org/notebooks/class_5/week_5/46_making_plots_pretty.html
-def PrityPlot(loss,mse=None,accuracy = None,baseline=None):
-
+def PrityPlot(loss, mse=None, accuracy=None, baseline=None):
     fig, ax = plt.subplots(figsize=(6, 5))
 
     # Define font sizes
@@ -164,12 +147,26 @@ def PrityPlot(loss,mse=None,accuracy = None,baseline=None):
     plt.savefig("great.png", dpi=300)
 
 
+#
+# #Original code from: https://www.practicaldatascience.org/notebooks/class_5/week_5/46_making_plots_pretty.html
+def ReadAndPlot(data_path, plot_path, problem_name, test_name, classification):
+    data_dir = f"{data_path}/{problem_name}"
+    try:
+        history, result = ReadDataForPlotBin(data_path, problem_name, test_name)
+    except FileNotFoundError as e:
+        print(f"some file in  {data_dir}/{test_name} not found {e}")
+        return
+
+    if classification:
+        PlotModelAccuracy(history, test_name, plot_path, test_name)
+    else:
+        PlotModelLossMSE(history, test_name, plot_path, test_name)
 
 
-def ReadAndPlotAll(path,problemName,classification):
-    dataPath=f"{path}/{problemName}"
+def ReadAndPlotAll(data_path, plot_path, problemName, classification):
+    dataPath = f"{data_path}/{problemName}"
     for dir in getDirectSubDir(dataPath):
-        ReadAndPlot(path, problemName, dir.name, classification)
+        ReadAndPlot(data_path, plot_path, problemName, dir.name, classification)
 
 
 def getDirectSubDir(path):

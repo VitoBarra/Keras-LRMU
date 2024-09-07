@@ -7,6 +7,7 @@ import numpy as np
 import numpy.random as rng
 from GlobalConfig import *
 
+
 def plot_mackey_glass(X, Y, title=""):
     plt.figure(figsize=(14, 8))
     plt.title(title)
@@ -20,20 +21,19 @@ def plot_mackey_glass(X, Y, title=""):
     ShowOrSavePlot(PLOT_DATAVIS_PATH, title)
 
 
-
-
-
 def PlotMarkeyGlass(tau):
     chosenExemple = 0
     X, Y = MackeyGlass.data.generate_data(1, 5000, seed=0, predict_length=15, tau=tau, washout=100,
                                           delta_t=1, center=True)
     plot_mackey_glass(X[0], Y[0], title=f"Mackey Glass T{tau}")
 
-def WritePlotMNIST(ax, image, label,variantName):
+
+def WritePlotMNIST(ax, image, label, variantName):
     ax.title.set_text(f"{variantName}-Digit = {label}")
     ax.title.set_size(40)
 
     ax.imshow(image.reshape(28, 28))
+
 
 def PlotMNISTVariant():
     fig, axs = plt.subplots(1, 2, figsize=(18, 8))
@@ -60,5 +60,5 @@ if __name__ == "__main__":
     PlotMNISTVariant()
     for tau in [17, 30]:
         PlotMarkeyGlass(tau)
-    ReadAndPlotAll(PLOTS_DIR, psMNIST.conf.PROBLEM_NAME, True)
-    ReadAndPlotAll(PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
+    ReadAndPlotAll(DATA_DIR, PLOTS_DIR, psMNIST.conf.PROBLEM_NAME, True)
+    ReadAndPlotAll(DATA_DIR, PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
