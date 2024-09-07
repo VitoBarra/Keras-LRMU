@@ -103,15 +103,15 @@ def RunEvaluation(sample=128, sequenceLength=5000, tau=17, batchSize=64, epochs=
     training.Concatenate(validation)
 
     if tau == 17:
-        #ModelEvaluation(LMU_T17_Original_1Layer, f"LMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-       # ModelEvaluation(LMU_ESN_T17_BestModel, f"LMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
-        #ModelEvaluation(LRMU_T17_BestModel, f"LRMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
+        ModelEvaluation(LMU_T30_BestModel, f"LMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
+        ModelEvaluation(LMU_ESN_T17_BestModel, f"LMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
+        ModelEvaluation(LRMU_T17_BestModel, f"LRMU_{sample}_{lengthName}_T17", training, test, batchSize, epochs)
         ModelEvaluation(LRMU_ESN_T17_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T17", training, test, batchSize,
                         epochs)
     elif tau == 30:
-        #ModelEvaluation(LMU_T30_Original_1Layer, f"LMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        #ModelEvaluation(LMU_ESN_T30_BestModel, f"LMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
-        #ModelEvaluation(LRMU_T30_BestModel, f"LRMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
+        ModelEvaluation(LMU_T30_BestModel, f"LMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
+        ModelEvaluation(LMU_ESN_T30_BestModel, f"LMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
+        ModelEvaluation(LRMU_T30_BestModel, f"LRMU_{sample}_{lengthName}_T30", training, test, batchSize, epochs)
         ModelEvaluation(LRMU_ESN_T30_BestModel, f"LRMU_ESN_{sample}_{lengthName}_T30", training, test, batchSize,
                         epochs)
 

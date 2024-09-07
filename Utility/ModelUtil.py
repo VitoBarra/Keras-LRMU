@@ -5,17 +5,19 @@ import tensorflow.keras as ks
 from timeit import default_timer as timer
 from GlobalConfig import *
 
+
 class TimingCallback(ks.callbacks.Callback):
     def __init__(self, logs={}):
-        self.logs=[]
+        self.logs = []
+
     def on_epoch_begin(self, epoch, logs={}):
         self.starttime = timer()
+
     def on_epoch_end(self, epoch, logs={}):
-        self.logs.append(timer()-self.starttime)
+        self.logs.append(timer() - self.starttime)
+
 
 def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
-
-
     # Define callback.
     checkpoint_filepath = f"{TEMP_DIR}/{testName}/model.keras"
     model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
@@ -37,19 +39,19 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
         start_from_epoch=0,
     )
 
-    time_tracker= TimingCallback()
+    time_tracker = TimingCallback()
 
     # Build model.
     model = buildModel()
     history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,
                         epochs=epochs,
-                        callbacks=[model_checkpoint_callback, early_stop,time_tracker]
+                        callbacks=[model_checkpoint_callback, early_stop, time_tracker]
                         )
     try:
-        history.history["time"]=time_tracker.logs
+        history.history["time"] = time_tracker.logs
         model = ks.models.load_model(checkpoint_filepath)
-        model.save(f"{BEST_MODEL_DIR}/{testName}/best_model.h5")
+        model.save(f"{BEST_MODEL_DIR}/{testName}/best_model.keras")
         result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
         return history, result
     except FileNotFoundError:
@@ -96,7 +98,7 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
         restore_best_weights=False,
         start_from_epoch=0,
     )
-    tensorboardCB=ks.callbacks.TensorBoard(f"{testDir}")
+    tensorboardCB = ks.callbacks.TensorBoard(f"{testDir}")
     try:
         tuner.search(
             training.Data,
@@ -107,10 +109,10 @@ def TunerTraining(hyperModel, tuningName, problemName, training, validation, epo
             callbacks=[tensorboardCB, early_stop],
         )
     except keras_tuner.errors.FatalError as e:
-        print("serach failed")
+        print("search failed")
         return
     except Exception as e:
-        print("serach failed")
+        print("search failed")
         print(e)
         return
 
