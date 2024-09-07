@@ -61,19 +61,6 @@ def generate_data(n_series, length, seed=0,
     return X, Y
 
 
-def cool_plot(X, Y, title=""):
-    plt.figure(figsize=(14, 8))
-    plt.title(title)
-    plt.scatter(X[:, 0], Y[:, 0] - X[:, 0], s=8, alpha=0.7,
-                c=np.arange(X.shape[0]), cmap=sns.cubehelix_palette(as_cmap=True))
-    plt.plot(X[:, 0], Y[:, 0] - X[:, 0], c='black', alpha=0.2)
-    plt.xlabel("$x(t)$")
-    plt.ylabel("$y(t) - x(t)$")
-    sns.despine(offset=15)
-
-    ShowOrSavePlot("./plots", "MackeyGlass")
-
-
 def MackeyGlassDataset(validationSplit=0.1, testSplit=0.1, sample=128, sequenceLength=5000, predictLength=15, tau=17,
                        seed=0):
     data, label = generate_data(sample, sequenceLength, seed, predictLength, tau)

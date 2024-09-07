@@ -2,6 +2,21 @@ import tensorflow.keras as ks
 from tensorflow.keras.initializers import *
 from LRMU import LRMU
 from LMU import LMU
+import tensorflow as tf
+
+
+def rms(x, axis=-1, keepdims=False):
+    print("here2")
+    return tf.reduce_mean(tf.square(x), axis=axis, keepdims=keepdims)
+
+
+def nrmse(actual, target, **kwargs):
+    print(tf.sqrt(rms(actual - target) / rms(target)).shape)
+    return tf.sqrt(rms(actual - target) / rms(target))
+
+
+def nrmse_metric(y_true, y_pred):
+    return nrmse(y_pred, y_true)
 
 
 class ModelBuilder:

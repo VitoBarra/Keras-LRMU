@@ -97,18 +97,18 @@ def RunEvaluation(batchSize=64, epochs=10):
         validation.ToCategoricalLabel()
         training.Concatenate(validation)
 
-    #ModelEvaluation(LMU_Original, "LMU_50k", training, test, batchSize, epochs)
+    # ModelEvaluation(LMU_Original, "LMU_50k", training, test, batchSize, epochs)
 
     # ModelEvaluation(LMU_ESN_BestModel, "LMU_ESN_50k", training, test, batchSize, epochs)
     # ModelEvaluation(LRMU_BestModel, "LRMU_50k", training, test, batchSize, epochs)
     # ModelEvaluation(LRMU_ESN_BestModel, "LRMU_ESN_50k", training, test, batchSize, epochs)
 
-    ModelEvaluation(LMU_ESN_comp, "LMU_ESN_50k_comp", training, test, batchSize, epochs)
-    ModelEvaluation(LRMU_comp, "LRMU_50k_comp", training, test, batchSize, epochs)
-    ModelEvaluation(LRMU_ESN_comp, "LRMU_ESN_50k_comp", training, test, batchSize, epochs)
+    ModelEvaluation(LMU_ESN_comp(), "LMU_ESN_50k_comp", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_comp(), "LRMU_50k_comp", training, test, batchSize, epochs)
+    ModelEvaluation(LRMU_ESN_comp(), "LRMU_ESN_50k_comp", training, test, batchSize, epochs)
 
 
-def RunTuning(dataPartition=10000, max_trial=50):
+def RunTuning(dataPartition=10000, max_trial=50, epochs=10):
     lengthName = f"{str(dataPartition)[0:1]}k"
     training, validation, test = psMNISTDataset(True, 0.1, dataPartition)
     training.ToCategoricalLabel()
@@ -117,6 +117,6 @@ def RunTuning(dataPartition=10000, max_trial=50):
 
     hyperModels = HyperModel("psMNIST-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, CLASS_NUMBER, False, False)
 
-    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, 5, max_trial, True)
-    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, 5, max_trial, True)
-    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, 5, max_trial, True)
+    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, epochs, max_trial, True)
+    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, epochs, max_trial, True)
+    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{lengthName}k", PROBLEM_NAME, training, validation, epochs, max_trial, True)

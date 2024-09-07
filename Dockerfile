@@ -16,7 +16,7 @@ RUN apt install -y python${python_version}
 RUN update-alternatives --install /usr/local/bin/python python /usr/bin/python${python_version} 1
 
 # Update pip: https://packaging.python.org/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date
-RUN python -m pip install --upgrade pip setuptools wheel
+RUN python -m pip install --upgrade pip setuptools wheel requests
 
 ADD requirements.txt .
 RUN python -m pip install -r requirements.txt

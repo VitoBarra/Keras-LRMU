@@ -17,7 +17,7 @@ class TimingCallback(ks.callbacks.Callback):
         self.logs.append(timer() - self.starttime)
 
 
-def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
+def EvaluateModel(model, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
     # Define callback.
     checkpoint_filepath = f"{TEMP_DIR}/{testName}/model.keras"
     model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
@@ -30,8 +30,8 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
     )
     early_stop = ks.callbacks.EarlyStopping(
         monitor="loss",
-        min_delta=0,
-        patience=2,
+        min_delta=0.00001,
+        patience=10,
         verbose=0,
         mode="auto",
         baseline=2.0,
@@ -41,8 +41,6 @@ def EvaluateModel(buildModel, testName, train, test, batch_size=128, epochs=15, 
 
     time_tracker = TimingCallback()
 
-    # Build model.
-    model = buildModel()
     history = model.fit(train.Data, train.Label,
                         batch_size=batch_size,
                         epochs=epochs,

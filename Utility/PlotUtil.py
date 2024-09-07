@@ -66,7 +66,7 @@ def SaveDataForPlotJson(path, problem_name, test_name, history, result):
         pickle.dump(result, outfile)
 
 
-def ReadDataForPlotBin(data_path, problem_name, test_name):
+def ReadTrainingDataBin(data_path, problem_name, test_name):
     dir = f"{data_path}/{problem_name}/{test_name}"
     # Writing to sample.json
 
@@ -151,16 +151,17 @@ def PrityPlot(loss, mse=None, accuracy=None, baseline=None):
 # #Original code from: https://www.practicaldatascience.org/notebooks/class_5/week_5/46_making_plots_pretty.html
 def ReadAndPlot(data_path, plot_path, problem_name, test_name, classification):
     data_dir = f"{data_path}/{problem_name}"
+    plot_dir = f"{plot_path}/{problem_name}"
     try:
-        history, result = ReadDataForPlotBin(data_path, problem_name, test_name)
+        history, result = ReadTrainingDataBin(data_path, problem_name, test_name)
     except FileNotFoundError as e:
         print(f"some file in  {data_dir}/{test_name} not found {e}")
         return
 
     if classification:
-        PlotModelAccuracy(history, test_name, plot_path, test_name)
+        PlotModelAccuracy(history, test_name, plot_dir, test_name)
     else:
-        PlotModelLossMSE(history, test_name, plot_path, test_name)
+        PlotModelLossMSE(history, test_name, plot_dir, test_name)
 
 
 def ReadAndPlotAll(data_path, plot_path, problemName, classification):
@@ -171,3 +172,17 @@ def ReadAndPlotAll(data_path, plot_path, problemName, classification):
 
 def getDirectSubDir(path):
     return [f for f in os.scandir(path) if f.is_dir()]
+
+
+def PrintAllData(data_path, problem_name, classification):
+    print(f"------------------------{problem_name}------------------------")
+    for test_name in getDirectSubDir(f"{data_path}/{problem_name}"):
+        history, result = ReadTrainingDataBin(data_path, problem_name, test_name.name)
+        if classification:
+            print("----------------------")
+            print(f"{test_name.name}:")
+            print(f"    loss: {result[0]} | acc: {result[1]} | NRMSE: {result[0]}")
+        else:
+            print("---------------------")
+            print(f"{test_name.name}:")
+            print(f"    loss: {result[0]} | mae: {result[1]}")
