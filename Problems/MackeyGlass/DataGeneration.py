@@ -1,5 +1,5 @@
 import collections
-from Utility.DataUtil import DataLabel
+from Utility.DataUtil import DataSet
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -8,7 +8,7 @@ from Utility.PlotUtil import *
 
 def mackey_glass(sample_len=1000, tau=17, delta_t=10, seed=None, n_samples=1):
     # Adapted from https://github.com/mila-iqia/summerschool2015/blob/master/rnn_tutorial/synthetic.py
-    '''
+    """
     mackey_glass(sample_len=1000, tau=17, seed = None, n_samples = 1) -> input
     Generate the Mackey Glass time-series. Parameters are:
         - sample_len: length of the time-series in timesteps. Default is 1000.
@@ -17,7 +17,7 @@ def mackey_glass(sample_len=1000, tau=17, delta_t=10, seed=None, n_samples=1):
         - seed: to seed the random generator, can be used to generate the same
           timeseries at each invocation.
         - n_samples : number of samples to generate
-    '''
+    """
     history_len = tau * delta_t
     # Initial conditions for the history of the system
     timeseries = 1.2
@@ -62,8 +62,7 @@ def generate_data(n_series, length, seed=0,
 
 
 def MackeyGlassDataset(validationSplit=0.1, testSplit=0.1, sample=128, sequenceLength=5000, predictLength=15, tau=17,
-                       seed=0):
+                       seed=0) -> DataSet:
     data, label = generate_data(sample, sequenceLength, seed, predictLength, tau)
-    dataset = DataLabel(data, label)
-    training, validation, test = dataset.SplitDataset(validationSplit, testSplit)
-    return training, validation, test
+    dataset = DataSet(data, label)
+    return dataset.SplitDataset(validationSplit, testSplit)

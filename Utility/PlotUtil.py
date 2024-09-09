@@ -181,8 +181,8 @@ def PrintAllData(data_path, problem_name, classification):
         if classification:
             print("----------------------")
             print(f"{test_name.name}:")
-            print(f"    loss: {result[0]} | acc: {result[1]} | NRMSE: {result[0]}")
+            print(f"    loss: {result[0]} | acc: {result[1]}")
         else:
             print("---------------------")
             print(f"{test_name.name}:")
-            print(f"    loss: {result[0]} | mae: {result[1]}")
+            print(f"    loss: {result[0]} | mae: {result[1]} | NRMSE: Not implemented yet")

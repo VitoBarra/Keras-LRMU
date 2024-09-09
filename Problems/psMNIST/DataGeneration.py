@@ -54,4 +54,4 @@ def psMNISTDataset(shuffle=False, validationSplit=0.1, dataPartition=-1, seed=15
 
     # Split the training data into training and validation sets and return
     training_set, validation_set = training_set.SplitIn2(validationSplit)
-    return training_set, validation_set, test_set
+    return DataSet.init(training_set, validation_set, test_set)

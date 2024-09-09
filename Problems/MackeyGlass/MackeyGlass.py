@@ -1,5 +1,4 @@
 from Problems.MackeyGlass.Config import *
-import Problems.MackeyGlass.Config as c
 from Problems.MackeyGlass.DataGeneration import *
 from Utility.ModelUtil import *
 from Utility.PlotUtil import *
@@ -11,10 +10,10 @@ from GlobalConfig import *
 import tensorflow.keras as keras
 
 
-def FF_BaseLine():
+def FF_BaseLine(tau=17, activation="relu"):
     inputs = keras.Input(shape=(SEQUENCE_LENGTH,))
-    output = keras.layers.Dense(1, activation='linear')(inputs)
-    model = keras.Model(inputs=inputs, outputs=output)
+    output = keras.layers.Dense(1, activation=activation, name=f"FF_T{tau}_{activation}_input")(inputs)
+    model = keras.Model(inputs=inputs, outputs=output, name=f"FF_T{tau}_{activation}_BaseLine")
     model.summary()
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     return model
@@ -42,7 +41,7 @@ def LMU_ESN_BestModel(tau=17, activation="relu"):
         Builder.LMU(4, 20, 56, ReservoirCell(240, spectral_radius=0.95, leaky=0.7), False,
                     False, True, False, True, 1)
     elif tau == 30:
-        Builder.LMU(8, 8, 16, ReservoirCell(288, spectral_radius=0.975, leaky=0.9), False,
+        Builder.LMU(8, 8, 16, ReservoirCell(288, spectral_radius=0.95, leaky=0.9), False,
                     True, True, False, False, 1)
 
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
@@ -76,9 +75,9 @@ def LRMU_ESN_BestModel(tau=17, activation="relu"):
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=15):
+def ModelEvaluation(model, testName, dataset, batchSize=64, epochs=15):
     try:
-        history, result = EvaluateModel(model, testName, training, test, batchSize, epochs, "loss")
+        history, result = EvaluateModel(model, testName, dataset, batchSize, epochs, "val_mae")
     except:
         print("Error during model evaluation")
         raise
@@ -93,35 +92,26 @@ def ModelEvaluation(model, testName, training, test, batchSize=64, epochs=15):
         raise
 
 
-def RunEvaluation(sample=128, sequenceLength=5000, tau=17, activation="relu", batchSize=64, epochs=15):
-    c.SEQUENCE_LENGTH = sequenceLength
-    lengthName = f"{str(sequenceLength)[0]}k"
-    training, validation, test = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
+def RunEvaluation(sample=128, tau=17, activation="relu", batchSize=64, epochs=25):
+    dataSet = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
 
-    training.Concatenate(validation)
-
-    ModelEvaluation(LRMU_ESN_BestModel(tau, activation), f"LRMU_ESN_{sample}_{lengthName}_T{tau}_{activation}",
-                    training, test, batchSize, epochs)
-    ModelEvaluation(LRMU_BestModel(tau, activation), f"LRMU_{sample}_{lengthName}_T{tau}_{activation}", training, test,
-                    batchSize, epochs)
-    ModelEvaluation(LMU_ESN_BestModel(tau, activation), f"LMU_ESN_{sample}_{lengthName}_T{tau}_{activation}", training,
-                    test, batchSize, epochs)
-    ModelEvaluation(LMU_BestModel(tau, activation), f"LMU_{sample}_{lengthName}_T{tau}_{activation}", training, test,
-                    batchSize, epochs)
-
-    ModelEvaluation(FF_BaseLine, f"FF_{sample}_{lengthName}", training, test, batchSize, epochs)
+    ModelEvaluation(FF_BaseLine(tau, activation), f"FF_T{tau}_{activation}", dataSet, batchSize, epochs)
+    ModelEvaluation(LRMU_ESN_BestModel(tau, activation), f"LRMU_ESN_T{tau}_{activation}", dataSet,  batchSize, epochs)
+    ModelEvaluation(LRMU_BestModel(tau, activation), f"LRMU_T{tau}_{activation}", dataSet,batchSize, epochs)
+    ModelEvaluation(LMU_ESN_BestModel(tau, activation), f"LMU_ESN_T{tau}_{activation}", dataSet, batchSize, epochs)
+    ModelEvaluation(LMU_BestModel(tau, activation), f"LMU_T{tau}_{activation}", dataSet,  batchSize, epochs)
 
 
 def RunTuning(sample=128, sequenceLength=5000, tau=17, epoch=5, max_trial=50):
     lengthName = f"{str(sequenceLength)[0]}k"
-    training, validation, test = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
+    dataSet = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
 
     hyperModels = HyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, None, True, True)
-    # TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-    #               validation,epoch,max_trial, True)
-    # TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-    #               validation, epoch, max_trial, True)
-    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, epoch, max_trial, True)
-    TunerTraining(hyperModels.LMU(), f"LMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, training,
-                  validation, epoch, max_trial, True)
+    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, dataSet, epoch,
+                  max_trial, True)
+    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, dataSet, epoch,
+                  max_trial, True)
+    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, dataSet, epoch,
+                  max_trial, True)
+    TunerTraining(hyperModels.LMU(), f"LMU_Tuning_{sample}_{lengthName}_T{tau}", PROBLEM_NAME, dataSet, epoch,
+                  max_trial, True)

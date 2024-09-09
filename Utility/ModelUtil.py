@@ -4,6 +4,7 @@ import keras_tuner
 import tensorflow.keras as ks
 from timeit import default_timer as timer
 from GlobalConfig import *
+from Utility.DataUtil import DataSet
 
 
 class TimingCallback(ks.callbacks.Callback):
@@ -17,7 +18,8 @@ class TimingCallback(ks.callbacks.Callback):
         self.logs.append(timer() - self.starttime)
 
 
-def EvaluateModel(model, testName, train, test, batch_size=128, epochs=15, monitorStat='loss'):
+def EvaluateModel(model, testName, dataSet: DataSet, batch_size=128, epochs=15, monitorStat='val_loss'):
+    train, validation, test = dataSet.Unpack()
     # Define callback.
     checkpoint_filepath = f"{TEMP_DIR}/{testName}/model.keras"
     model_checkpoint_callback = ks.callbacks.ModelCheckpoint(
@@ -29,7 +31,7 @@ def EvaluateModel(model, testName, train, test, batch_size=128, epochs=15, monit
         initial_value_threshold=None
     )
     early_stop = ks.callbacks.EarlyStopping(
-        monitor="loss",
+        monitor=monitorStat,
         min_delta=0.00001,
         patience=10,
         verbose=0,
@@ -42,6 +44,7 @@ def EvaluateModel(model, testName, train, test, batch_size=128, epochs=15, monit
     time_tracker = TimingCallback()
 
     history = model.fit(train.Data, train.Label,
+                        validation_data=(validation.Data, validation.Label),
                         batch_size=batch_size,
                         epochs=epochs,
                         callbacks=[model_checkpoint_callback, early_stop, time_tracker]
@@ -62,8 +65,9 @@ def EvaluateModel(model, testName, train, test, batch_size=128, epochs=15, monit
         raise
 
 
-def TunerTraining(hyperModel, tuningName, problemName, training, validation, epochs=10, maxTrial=100,
+def TunerTraining(hyperModel, tuningName, problemName, dataSet, epochs=10, maxTrial=100,
                   override_test=False):
+    training, validation, _ = dataSet.Unpack()
     testDir = f"{TUNING_DIR}/{problemName}/{tuningName}"
     folder_already_exists = os.path.exists(testDir)
 
