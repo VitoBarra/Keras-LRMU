@@ -31,6 +31,11 @@ class HyperModel(kt.HyperModel):
         self.UseESN = None
         self.UseLRMU = None
 
+        self.LMUForceParam = False
+        self.LMUParam = None
+        self.LMUForceConnection = False
+        self.LMUConnection = None
+
     def LMU(self):
         self.ModelName = "LMU"
         self.UseLRMU = False
@@ -70,7 +75,7 @@ class HyperModel(kt.HyperModel):
         if not self.UseESN:
             hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(self.Seed))
         else:
-            spectraRadius = hp.Float("ESN_spectraRadius", min_value=0.8, max_value=1.1, step=0.025)
+            spectraRadius = hp.Float("ESN_spectraRadius", min_value=0.8, max_value=1.1, step=0.01)
             leaky = hp.Float("ESN_leaky", min_value=0.5, max_value=1, step=0.1) if self.UseLeaky else 1
             inputScaler = hp.Float("ESN_inputScaler", min_value=0.5, max_value=2,
                                    step=0.25) if self.UseInputScaler else 1
@@ -78,7 +83,7 @@ class HyperModel(kt.HyperModel):
                                        input_scaling=inputScaler)
         return hiddenCell
 
-    def LMUParam(self, hp):
+    def LMUSelectParam(self, hp):
         layerN = 1
         if self.ModelType == ModelType.Prediction:
             memoryDim = hp.Choice("memoryDim", values=[1, 2, 4, 8, 16, 32])
@@ -91,18 +96,18 @@ class HyperModel(kt.HyperModel):
         hiddenUnit = hp.Int("hiddenUnit", min_value=16, max_value=16 * 20, step=16)
         return layerN, memoryDim, order, theta, self.selectCell(hp, hiddenUnit)
 
-    def selectScaler(self, hp, memoryToMemory, hiddenToMemory, useBias):
+    def selectScaler(self, hp, hiddenToMemory, memoryToMemory, useBias):
         InputEncoderScaler = None
-        memoryEncoderScaler = None
         hiddenEncoderScaler = None
+        memoryEncoderScaler = None
         biasScaler = None
 
         if self.UseLRMU:
             InputEncoderScaler = hp.Float("InputEncoderScaler", min_value=0.5, max_value=2, step=0.25)
-            if memoryToMemory:
-                memoryEncoderScaler = hp.Float("memoryEncoderScaler", min_value=0.5, max_value=2, step=0.25)
             if hiddenToMemory:
                 hiddenEncoderScaler = hp.Float("hiddenEncoderScaler", min_value=0.5, max_value=2, step=0.25)
+            if memoryToMemory:
+                memoryEncoderScaler = hp.Float("memoryEncoderScaler", min_value=0.5, max_value=2, step=0.25)
             if useBias:
                 biasScaler = hp.Float("biasScaler", min_value=0.5, max_value=2, step=0.25)
 
@@ -113,15 +118,34 @@ class HyperModel(kt.HyperModel):
         hiddenToMemory = hp.Boolean("hiddenToMemory")
         inputToHiddenCell = hp.Boolean("inputToHiddenCell")
         useBias = hp.Boolean("useBias")
-        return memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, memoryToMemory,
-                                                                                             hiddenToMemory, useBias)
+        return hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, hiddenToMemory,
+                                                                                             memoryToMemory, useBias)
+
+    def ForceLMUParam(self, Nlayer:int, memoryDim:int, order:int, theta:int, hiddenUnit :int):
+        self.LMUForceParam = True
+        self.LMUParam = (Nlayer, memoryDim, order, theta, hiddenUnit)
+        return self
+
+    def ForceConnection(self, hiddenToMemory: bool, memoryToMemory: bool, inputToHiddenCell: bool, useBias: bool):
+        self.LMUForceConnection = True
+        self.LMUConnection = (hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias)
+        return self
 
     def constructHyperModel(self, hp):
 
-        layerN, memoryDim, order, theta, hiddenCell = self.LMUParam(hp)
-        memoryToMemory, hiddenToMemory, inputToHiddenCell, useBias, scaler = self.selectConnection(hp)
-        (hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler) = scaler
+        if self.LMUForceParam:
+            layerN, memoryDim, order, theta, hiddenUnit = self.LMUParam
+            hiddenCell = self.selectCell(hp, hiddenUnit)
+        else:
+            layerN, memoryDim, order, theta, hiddenCell = self.LMUSelectParam(hp)
 
+        if self.LMUForceConnection:
+            hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias = self.LMUConnection
+            scaler = self.selectScaler(hp, hiddenToMemory, memoryToMemory, useBias)
+        else:
+            hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias, scaler = self.selectConnection(hp)
+
+        (hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler) = scaler
         self.Builder.inputLayer(self.SequenceLength)
         if self.UseLRMU:
             self.Builder.LRMU(memoryDim, order, theta, hiddenCell,

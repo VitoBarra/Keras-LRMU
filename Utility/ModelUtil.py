@@ -5,6 +5,7 @@ import tensorflow.keras as ks
 from timeit import default_timer as timer
 from GlobalConfig import *
 from Utility.DataUtil import DataSet
+from Utility.PlotUtil import SaveTrainingData
 
 
 class TimingCallback(ks.callbacks.Callback):
@@ -62,6 +63,24 @@ def EvaluateModel(model, testName, dataSet: DataSet, batch_size=128, epochs=15, 
         raise
     except Exception as e:
         print(e)
+        raise
+
+
+def ModelEvaluation(model, testName, saveDir, dataset, batchSize, epochs, monitorStat):
+    try:
+        history, result = EvaluateModel(model, testName, dataset, batchSize, epochs, monitorStat)
+    except Exception as e:
+        print(f"\nError during model evaluation:\n {e}\n")
+        raise
+
+    print(f"total training time: {sum(history.history['time'])}s", )
+    print(f"Test loss: {result[0]}")
+    print(f"Test {monitorStat[-3:]}: {result[1]}")
+
+    try:
+        SaveTrainingData(saveDir, history, result)
+    except Exception as e:
+        print(f"\nexception during Data saving:\n {e}\n")
         raise
 
 

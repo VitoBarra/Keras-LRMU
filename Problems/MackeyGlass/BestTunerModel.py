@@ -1,14 +1,18 @@
-from Problems.MackeyGlass.Config import *
-from Problems.MackeyGlass.DataGeneration import *
-from Utility.ModelUtil import *
-from Utility.PlotUtil import *
-from ESN.layer import *
-from Utility.HyperModel import HyperModel
-from Utility.ModelBuilder import ModelBuilder
 from tensorflow.keras.layers import SimpleRNNCell
-from GlobalConfig import *
-import tensorflow.keras as keras
+from ESN.layer import *
+from Problems.MackeyGlass.Config import *
+from Utility.ModelBuilder import ModelBuilder
 
+def LMU_BestModel(tau=17, activation="relu"):
+    Builder = ModelBuilder(PROBLEM_NAME, f"LMU_{tau}")
+    Builder.inputLayer(SEQUENCE_LENGTH)
+    if tau == 17:
+        Builder.LMU(2, 1, 44, SimpleRNNCell(176), False,
+                    True, False, False, False, 1)
+    elif tau == 30:
+        Builder.LMU(1, 1, 64, SimpleRNNCell(144), False,
+                    True, False, False, False, 1)
+    return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 def LMU_ESN_BestModel(tau=17, activation="relu"):
     Builder = ModelBuilder(PROBLEM_NAME, f"LMU_ESN_T{tau}")
