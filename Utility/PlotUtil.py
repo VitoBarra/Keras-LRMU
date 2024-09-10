@@ -1,8 +1,6 @@
-import os
 import pickle
-
 from matplotlib import pyplot as plt
-import json
+from Utility.FileUtil import *
 
 
 def PlotModelLossMSE(history, plotTitle='Problems', path=None, filename=None):
@@ -56,23 +54,28 @@ def ShowOrSavePlot(path=None, filename=None):
         plt.clf()
 
 
-def SaveDataForPlotJson(path, problem_name, test_name, history, result):
-    dir = f"{path}/{problem_name}/{test_name}"
-    os.makedirs(dir, exist_ok=True)
-    # Writing to sample.json
-    with open(f"{dir}/history.bin", "wb") as outfile:
+def SaveTrainingDataByName(data_path, problem_name, test_name, history, result):
+    dir = f"{data_path}/{problem_name}/{test_name}"
+    SaveTrainingData(dir,history, result)
+
+def SaveTrainingData(path, history, result):
+    os.makedirs(path, exist_ok=True)
+    with open(f"{path}/history.bin", "wb") as outfile:
         pickle.dump(history.history, outfile)
-    with open(f"{dir}/result.bin", "wb") as outfile:
+    with open(f"{path}/result.bin", "wb") as outfile:
         pickle.dump(result, outfile)
 
-
-def ReadTrainingDataBin(data_path, problem_name, test_name):
+def ReadTrainingDataByName(data_path, problem_name, test_name):
     dir = f"{data_path}/{problem_name}/{test_name}"
     # Writing to sample.json
+    history, result= ReadTrainingData(dir)
+    return history, result
 
-    with open(f"{dir}/history.bin", "rb") as inputfile:
+
+def ReadTrainingData(path):
+    with open(f"{path}/history.bin", "rb") as inputfile:
         history = pickle.load(inputfile)
-    with open(f"{dir}/result.bin", "rb") as inputfile:
+    with open(f"{path}/result.bin", "rb") as inputfile:
         result = pickle.load(inputfile)
     return history, result
 
@@ -153,7 +156,7 @@ def ReadAndPlot(data_path, plot_path, problem_name, test_name, classification):
     data_dir = f"{data_path}/{problem_name}"
     plot_dir = f"{plot_path}/{problem_name}"
     try:
-        history, result = ReadTrainingDataBin(data_path, problem_name, test_name)
+        history, result = ReadTrainingDataByName(data_path, problem_name, test_name)
     except FileNotFoundError as e:
         print(f"some file in  {data_dir}/{test_name} not found {e}")
         return
@@ -170,19 +173,30 @@ def ReadAndPlotAll(data_path, plot_path, problemName, classification):
         ReadAndPlot(data_path, plot_path, problemName, dir.name, classification)
 
 
-def getDirectSubDir(path):
-    return [f for f in os.scandir(path) if f.is_dir()]
 
 
-def PrintAllData(data_path, problem_name, classification):
+def PrintAllDataByName(data_path, problem_name, classification):
     print(f"------------------------{problem_name}------------------------")
-    for test_name in getDirectSubDir(f"{data_path}/{problem_name}"):
-        history, result = ReadTrainingDataBin(data_path, problem_name, test_name.name)
-        if classification:
-            print("----------------------")
-            print(f"{test_name.name}:")
-            print(f"    loss: {result[0]} | acc: {result[1]}")
-        else:
-            print("---------------------")
-            print(f"{test_name.name}:")
-            print(f"    loss: {result[0]} | mae: {result[1]} | NRMSE: Not implemented yet")
+    PrintAllData(f"{data_path}/{problem_name}", classification)
+
+
+def PrintAllData(path, classification):
+    if classification:
+        metric_in_history = "val_accuracy"
+        metric_to_print = "acc"
+    else:
+        metric_in_history = "val_mae"
+        metric_to_print = "mae"
+
+    print(f"|---------model_name----------|-Val_loss-|-Val_{metric_to_print}-|-t_loss-|-t_{metric_to_print}-|")
+    PrintTestInFolder(path, metric_in_history)
+
+def PrintTestInFolder(path, metric_in_history):
+    for test_name in getDirectSubDir(f"{path}"):
+        history, result = ReadTrainingData(f"{path}/{test_name.name}")
+        print(f"{test_name.name:30} && {history['val_loss'][-1]:5.4f} && {history[metric_in_history][-1]:5.4f} && {result[0]:5.4f} && {result[1]:5.4f}")
+
+def PrintAllDataAllSubProblem(data_path,problem_name, classification):
+    for dir in getDirectSubDir(f"{data_path}/{problem_name}"):
+        print(f"---------------------{dir.name}---------------------")
+        PrintAllData(f"{data_path}/{problem_name}/{dir.name}", classification)

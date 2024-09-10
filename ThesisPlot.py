@@ -61,6 +61,5 @@ if __name__ == "__main__":
     #     PlotMarkeyGlass(tau)
     # ReadAndPlotAll(DATA_DIR, PLOTS_DIR, psMNIST.conf.PROBLEM_NAME, True)
     #  ReadAndPlotAll(DATA_DIR, PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
-    PrintAllData(DATA_DIR,psMNIST.conf.PROBLEM_NAME, True)
-    PrintAllData(DATA_DIR,MackeyGlass.Config.PROBLEM_NAME, False)
-
+    PrintAllDataAllSubProblem(DATA_DIR, psMNIST.conf.PROBLEM_NAME, True)
+    PrintAllDataAllSubProblem(DATA_DIR, MackeyGlass.Config.PROBLEM_NAME, False)

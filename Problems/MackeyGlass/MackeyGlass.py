@@ -20,62 +20,70 @@ def FF_BaseLine(tau=17, activation="relu"):
 
 
 def LMU_BestModel(tau=17, activation="relu"):
-    #Done
     Builder = ModelBuilder(PROBLEM_NAME, f"LMU_{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
+    # if tau == 17:
+    #     Builder.LMU(2, 1, 44, SimpleRNNCell(176), False,
+    #                 True, False, False, False, 1)
+    # elif tau == 30:
+    #     Builder.LMU(1, 1, 64, SimpleRNNCell(144), False,
+    #                 True, False, False, False, 1)
+
     if tau == 17:
-        Builder.LMU(2, 1, 44, SimpleRNNCell(176), False,
+        Builder.LMU(1, 1, 64, SimpleRNNCell(176), False,
                     True, False, False, False, 1)
     elif tau == 30:
-        Builder.LMU(1, 1, 64, SimpleRNNCell(144), False,
+        Builder.LMU(1, 1, 64, SimpleRNNCell(176), False,
                     True, False, False, False, 1)
 
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def LMU_ESN_BestModel(tau=17, activation="relu"):
-    #Done
+# comp models
+def LMU_ESN_comp(tau=17, activation="relu"):
     Builder = ModelBuilder(PROBLEM_NAME, f"LMU_ESN_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
+
     if tau == 17:
-        Builder.LMU(4, 20, 56, ReservoirCell(240, spectral_radius=0.95, leaky=0.7), False,
-                    False, True, False, True, 1)
+        Builder.LMU(1, 1, 64, ReservoirCell(176, spectral_radius=0.99, leaky=0.5), False,
+                    True, False, False, False, 1)
     elif tau == 30:
-        Builder.LMU(8, 8, 16, ReservoirCell(288, spectral_radius=0.95, leaky=0.9), False,
-                    True, True, False, False, 1)
+        Builder.LMU(1, 1, 64, ReservoirCell(176, spectral_radius=0.99, leaky=0.5), False,
+                    True, False, False, False, 1)
 
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def LRMU_BestModel(tau=17, activation="relu"):
+def LRMU_comp(tau=17, activation="relu"):
     Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
+
     if tau == 17:
-        Builder.LRMU(1, 12, 64, SimpleRNNCell(144, kernel_initializer=keras.initializers.GlorotUniform),
-                     False, False, True, False,
-                     1.5, 1, 1, 1.75, 1)
+        Builder.LRMU(1, 1, 64, SimpleRNNCell(176),
+                     True, False, False, False,
+                     1.5, None, 1, None, 1)
     elif tau == 30:
-        Builder.LRMU(2, 24, 52, SimpleRNNCell(192, kernel_initializer=keras.initializers.GlorotUniform),
-                     False, False, True, True,
-                     None, None, 1.75, 1.25, 1)
+        Builder.LRMU(1, 1, 64, SimpleRNNCell(176),
+                     True, False, False, False,
+                     1.5, None, 1, None, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def LRMU_ESN_BestModel(tau=17, activation="relu"):
+def LRMU_ESN_comp(tau=17, activation="relu"):
     Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_ESN_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
-        Builder.LRMU(4, 1, 144, ReservoirCell(320, spectral_radius=1, leaky=0.5),
-                     False, False, True, True,
-                     None, None, 0.75, 1.5, 1)
+        Builder.LRMU(1, 1, 44, ReservoirCell(176, spectral_radius=0.99, leaky=0.5),
+                     True, False, False, False,
+                     1.5, None, 1, None, 1)
     elif tau == 30:
-        Builder.LRMU(1, 24, 48, ReservoirCell(80, spectral_radius=1, leaky=0.5),
-                     False, False, True, True,
-                     None, None, 1.5, 1.75, 1)
+        Builder.LRMU(1, 1, 64, ReservoirCell(176, spectral_radius=0.99, leaky=0.5),
+                     True, False, False, False,
+                     1.5, None, 1, None, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def ModelEvaluation(model, testName, dataset, batchSize=64, epochs=15):
+def ModelEvaluation(model, testName, tau, dataset, batchSize=64, epochs=15):
     try:
         history, result = EvaluateModel(model, testName, dataset, batchSize, epochs, "val_mae")
     except:
@@ -86,7 +94,7 @@ def ModelEvaluation(model, testName, dataset, batchSize=64, epochs=15):
     print(f"test mae:{result[1]}")
 
     try:
-        SaveDataForPlotJson(DATA_DIR, PROBLEM_NAME, testName, history, result)
+        SaveTrainingDataByName(DATA_DIR, f"{PROBLEM_NAME}/T{tau}", testName, history, result)
     except:
         print("something went wrong during plot data saving ")
         raise
@@ -95,11 +103,17 @@ def ModelEvaluation(model, testName, dataset, batchSize=64, epochs=15):
 def RunEvaluation(sample=128, tau=17, activation="relu", batchSize=64, epochs=25):
     dataSet = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
 
-    ModelEvaluation(FF_BaseLine(tau, activation), f"FF_T{tau}_{activation}", dataSet, batchSize, epochs)
-    ModelEvaluation(LRMU_ESN_BestModel(tau, activation), f"LRMU_ESN_T{tau}_{activation}", dataSet,  batchSize, epochs)
-    ModelEvaluation(LRMU_BestModel(tau, activation), f"LRMU_T{tau}_{activation}", dataSet,batchSize, epochs)
-    ModelEvaluation(LMU_ESN_BestModel(tau, activation), f"LMU_ESN_T{tau}_{activation}", dataSet, batchSize, epochs)
-    ModelEvaluation(LMU_BestModel(tau, activation), f"LMU_T{tau}_{activation}", dataSet,  batchSize, epochs)
+    # ModelEvaluation(FF_BaseLine(tau, activation), f"FF_T{tau}_{activation}", dataSet, batchSize, epochs)
+    # ModelEvaluation(LRMU_ESN_BestModel(tau, activation), f"LRMU_ESN_T{tau}_{activation}", dataSet, batchSize, epochs)
+    # ModelEvaluation(LRMU_BestModel(tau, activation), f"LRMU_T{tau}_{activation}", dataSet, batchSize, epochs)
+    # ModelEvaluation(LMU_ESN_BestModel(tau, activation), f"LMU_ESN_T{tau}_{activation}", dataSet, batchSize, epochs)
+    # ModelEvaluation(LMU_BestModel(tau, activation), f"LMU_T{tau}_{activation}", dataSet, batchSize, epochs)
+
+    ModelEvaluation(FF_BaseLine(tau, activation), f"FF_{activation}_BaseLine", tau, dataSet, batchSize, epochs)
+    ModelEvaluation(LRMU_ESN_comp(tau, activation), f"LRMU_ESN_{activation}_comp", tau, dataSet, batchSize, epochs)
+    ModelEvaluation(LRMU_comp(tau, activation), f"LRMU_{activation}_comp", tau, dataSet, batchSize, epochs)
+    ModelEvaluation(LMU_ESN_comp(tau, activation), f"LMU_ESN_{activation}_comp", tau, dataSet, batchSize, epochs)
+    ModelEvaluation(LMU_BestModel(tau, activation), f"LMU_{activation}_comp", tau, dataSet, batchSize, epochs)
 
 
 def RunTuning(sample=128, sequenceLength=5000, tau=17, epoch=5, max_trial=50):
