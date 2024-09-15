@@ -194,7 +194,7 @@ def PrintAllData(path, classification):
 def PrintTestInFolder(path, metric_in_history):
     for test_name in getDirectSubDir(f"{path}"):
         history, result = ReadTrainingData(f"{path}/{test_name.name}")
-        print(f"{test_name.name:30} & {history['val_loss'][-1]:5.4f} & {history[metric_in_history][-1]:5.4f} & {result[0]:5.4f} & {result[1]:5.4f}")
+        print(f"{test_name.name:30} & {history['val_loss'][-1]:5.4f} & {history[metric_in_history][-1]:5.4f} & {result[0]:5.4f} & {result[1]:5.4f} \\\\")
 
 def PrintAllDataAllSubProblem(data_path,problem_name, classification):
     for dir in getDirectSubDir(f"{data_path}/{problem_name}"):

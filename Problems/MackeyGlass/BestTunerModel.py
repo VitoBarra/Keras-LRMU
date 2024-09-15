@@ -3,7 +3,7 @@ from ESN.layer import *
 from Problems.MackeyGlass.Config import *
 from Utility.ModelBuilder import ModelBuilder
 
-def LMU_BestModel(tau=17, activation="relu"):
+def LMU_BestModel(tau, activation):
     Builder = ModelBuilder(PROBLEM_NAME, f"LMU_{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
@@ -14,7 +14,7 @@ def LMU_BestModel(tau=17, activation="relu"):
                     True, False, False, False, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
-def LMU_ESN_BestModel(tau=17, activation="relu"):
+def LMU_ESN_BestModel(tau, activation):
     Builder = ModelBuilder(PROBLEM_NAME, f"LMU_ESN_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
@@ -27,7 +27,7 @@ def LMU_ESN_BestModel(tau=17, activation="relu"):
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def LRMU_BestModel(tau=17, activation="relu"):
+def LRMU_BestModel(tau, activation):
     Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
@@ -41,7 +41,7 @@ def LRMU_BestModel(tau=17, activation="relu"):
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-def LRMU_ESN_BestModel(tau=17, activation="relu"):
+def LRMU_ESN_BestModel(tau, activation):
     Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_ESN_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:

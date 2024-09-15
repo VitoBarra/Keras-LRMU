@@ -13,18 +13,19 @@ class ModelType(Enum):
 
 class HyperModel(kt.HyperModel):
 
-    def __init__(self, hyperModelName, problemName, sequenceLength, classNuber=None, searchTheta=True, useLeaky=True,
-                 seed=0):
+    def __init__(self, hyperModelName: str, problemName: str, sequenceLength: int, seed: int = 0):
         super().__init__(hyperModelName)
-        self.UseLeaky = useLeaky
-        self.UseInputScaler = False
         self.Seed = seed
         self.ProblemName = problemName
         self.SequenceLength = sequenceLength
-        self.SearchTheta = searchTheta
+        self.UseLeaky = True
+        self.UseInputScaler = True
 
-        self.ClassNumber = classNuber
-        self.ModelType = ModelType.Classification if classNuber is not None else ModelType.Prediction
+        self.SeriesDim = None
+        self.Activation = None
+        self.ClassNumber = None
+        self.SearchTheta = None
+        self.ModelType = None
 
         self.Builder = None
         self.ModelName = None
@@ -36,6 +37,19 @@ class HyperModel(kt.HyperModel):
         self.LMUForceConnection = False
         self.LMUConnection = None
 
+    def SetUpPrediction(self, seriesDim, activation: str):
+        self.ModelType = ModelType.Prediction
+        self.SeriesDim = seriesDim
+        self.Activation = activation
+        self.SearchTheta = True
+        return self
+
+    def SetUpClassification(self, classNumber: int):
+        self.ModelType = ModelType.Classification
+        self.ClassNumber = classNumber
+        self.SearchTheta = False
+        return self
+
     def LMU(self):
         self.ModelName = "LMU"
         self.UseLRMU = False
@@ -43,7 +57,7 @@ class HyperModel(kt.HyperModel):
         self.CreateModelBuilder()
         return self
 
-    def LMU_ESN(self, useLeaky=True, useInputScaler=False):
+    def LMU_ESN(self, useLeaky=True, useInputScaler=True):
         self.ModelName = "LMU-ESN"
         self.UseLRMU = False
         self.UseESN = True
@@ -59,7 +73,7 @@ class HyperModel(kt.HyperModel):
         self.CreateModelBuilder()
         return self
 
-    def LRMU_ESN(self, useLeaky=True, useInputScaler=False):
+    def LRMU_ESN(self, useLeaky=True, useInputScaler=True):
         self.ModelName = "LRMU-ESN"
         self.UseLRMU = True
         self.UseESN = True
@@ -121,7 +135,7 @@ class HyperModel(kt.HyperModel):
         return hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias, self.selectScaler(hp, hiddenToMemory,
                                                                                              memoryToMemory, useBias)
 
-    def ForceLMUParam(self, Nlayer:int, memoryDim:int, order:int, theta:int, hiddenUnit :int):
+    def ForceLMUParam(self, Nlayer: int, memoryDim: int, order: int, theta: int, hiddenUnit: int):
         self.LMUForceParam = True
         self.LMUParam = (Nlayer, memoryDim, order, theta, hiddenUnit)
         return self
@@ -158,7 +172,7 @@ class HyperModel(kt.HyperModel):
                              layerN)
 
         if self.ModelType == ModelType.Prediction:
-            return self.Builder.BuildPrediction(1)
+            return self.Builder.BuildPrediction(self.SeriesDim, self.Activation)
         elif self.ModelType == ModelType.Classification:
             return self.Builder.BuildClassification(self.ClassNumber)
         else:

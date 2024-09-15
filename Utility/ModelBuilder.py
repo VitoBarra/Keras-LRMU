@@ -24,6 +24,7 @@ class ModelBuilder:
     def __init__(self, problemName, modelVariant, seed=0):
         self.Input = None
         self.Feature = None
+        self.Outputs = None
         self.Model = None
         self.ProblemName = problemName
         self.ModelVariant = modelVariant
@@ -65,8 +66,8 @@ class ModelBuilder:
         self.__ComposeModel()
         return self.__Compile("adam", "categorical_crossentropy", ["accuracy"])
 
-    def BuildPrediction(self, unit=1, acctivation="relu"):
-        self.Outputs = ks.layers.Dense(unit, activation=acctivation, kernel_initializer=GlorotUniform(self.Seed))(
+    def BuildPrediction(self, unit, activation):
+        self.Outputs = ks.layers.Dense(unit, activation=activation, kernel_initializer=GlorotUniform(self.Seed))(
             self.Feature)
         self.__ComposeModel()
         return self.__Compile("adam", "mse", ["mae"])

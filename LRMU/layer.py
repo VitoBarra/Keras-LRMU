@@ -66,7 +66,6 @@ class LRMUCell(keras.layers.Layer):
         self.output_size = self.HiddenOutputSize
 
     def createWeight(self, shape, scaler=1.0):
-
         initializer = RandomUniform(minval=-scaler, maxval=scaler, seed=self.Seed)
         return self.add_weight(shape=shape, initializer=initializer, trainable=False)
 
