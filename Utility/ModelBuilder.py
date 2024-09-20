@@ -36,7 +36,7 @@ class ModelBuilder:
 
     def LRMU(self, memoryDim, order, theta, hiddenCell,
              hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
-             memoryEncoderScaler, hiddenEncoderScaler, inputEncoderScaler, biasScaler, layerN):
+             hiddenEncoderScaler, memoryEncoderScaler, inputEncoderScaler, biasScaler, layerN):
         feature = LRMU(memoryDim, order, theta, hiddenCell, hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
                        hiddenEncoderScaler, memoryEncoderScaler, inputEncoderScaler, biasScaler, self.Seed,
                        returnSequences=layerN > 1)(self.Input)

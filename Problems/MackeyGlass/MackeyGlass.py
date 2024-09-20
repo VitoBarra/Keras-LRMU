@@ -31,7 +31,7 @@ def LMU_Base(tau, activation):
 def LMU_ESN_comp(tau, activation):
     Builder = ModelBuilder(PROBLEM_NAME, f"LMU_ESN_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LMU(1, 16, 64, ReservoirCell(176, spectral_radius=0.99, leaky=0.5, input_scaling=1), False,
+    Builder.LMU(1, 16, 64, ReservoirCell(176, spectral_radius=0.91, leaky=0.8, input_scaling=0.5), False,
                 False, False, True, False, 1)
 
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
@@ -43,16 +43,16 @@ def LRMU_comp(tau, activation):
 
     Builder.LRMU(1, 16, 64, SimpleRNNCell(176),
                  False, False, True, False,
-                 1.5, None, 1, None, 1)
+                 None, None, 0.5, None, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
 def LRMU_ESN_comp(tau, activation):
     Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_ESN_T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LRMU(1, 16, 64, ReservoirCell(176, spectral_radius=0.99, leaky=0.5, input_scaling=1),
+    Builder.LRMU(1, 16, 64, ReservoirCell(176, spectral_radius=0.91, leaky=0.5, input_scaling=0.5),
                  False, False, True, False,
-                 1.5, None, 1, None, 1)
+                 None, None, 0.5, None, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
@@ -66,11 +66,11 @@ def RunEvaluation(sample, tau, activation, batchSize, epochs):
                     monitorStat)
     ModelEvaluation(LRMU_ESN_comp(tau, activation), f"LRMU_ESN_{activation}_comp", saveDir, dataSet, batchSize, epochs,
                     monitorStat)
-    ModelEvaluation(LRMU_comp(tau, activation), f"LRMU_{activation}_comp", saveDir, dataSet, batchSize, epochs,
-                    monitorStat)
     ModelEvaluation(LMU_ESN_comp(tau, activation), f"LMU_ESN_{activation}_comp", saveDir, dataSet, batchSize, epochs,
                     monitorStat)
-    ModelEvaluation(LMU_Base(tau, activation), f"LMU_{activation}", saveDir, dataSet, batchSize, epochs, monitorStat)
+    ModelEvaluation(LRMU_comp(tau, activation), f"LRMU_{activation}_comp", saveDir, dataSet, batchSize, epochs,
+                    monitorStat)
+    # ModelEvaluation(LMU_Base(tau, activation), f"LMU_{activation}", saveDir, dataSet, batchSize, epochs, monitorStat)
 
 
 def RunTuning(sample, tau,activation, epoch, max_trial):
@@ -81,8 +81,8 @@ def RunTuning(sample, tau,activation, epoch, max_trial):
     # TunerTraining(hyperModels.LMU(), f"LMU_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
     #               max_trial, True)
     TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
-                  max_trial, True)
+                  max_trial, False)
     TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
-                  max_trial, True)
+                  max_trial, False)
     TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
-                  max_trial, True)
+                  max_trial, False)
