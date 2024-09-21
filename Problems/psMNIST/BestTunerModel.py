@@ -1,5 +1,5 @@
 from tensorflow.keras.layers import SimpleRNNCell
-from ESN.layer import *
+from Reservoir.layer import *
 from Problems.psMNIST.Config import *
 from Utility.ModelBuilder import ModelBuilder
 

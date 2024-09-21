@@ -31,11 +31,11 @@ def WritePlotMNIST(ax, image, label, variantName):
     ax.title.set_text(f"{variantName}-Digit = {label}")
     ax.title.set_size(40)
 
-    ax.imshow(image.reshape(28, 28))
+    ax.imshow(image)
 
 
 def PlotMNISTVariant():
-    fig, axs = plt.subplots(1, 2, figsize=(18, 8))
+    fig, axs = plt.subplots(1, 2, figsize=(16, 8), dpi=200)
     ((X_train, Y_train), test) = psMNIST.data.LoadMNISTData()
     chosenExemple = 144
 
@@ -44,22 +44,27 @@ def PlotMNISTVariant():
     image = image / 255
 
     WritePlotMNIST(axs[0], image, label, "MNIST")
-    # Generate a permutation of pixel indices based on the seed
-    # image = np.reshape(image, (28 * 28, 1))
 
+    # Generate a permutation of pixel indices based on the seed
+    image = np.reshape(image, (28 * 28, 1))
     rng.seed(0)
     perm = rng.permutation(image.shape[0])
-    image = image[perm, :]
-    WritePlotMNIST(axs[1], image, label, "psMNIST")
+    image = image[perm,: ]
+    WritePlotMNIST(axs[1], image.reshape(28, 28), label, "pMNIST")
 
     ShowOrSavePlot(PLOT_DATAVIS_PATH, "MNIST_Variant")
 
+    plt.figure(figsize=(5, 1.5), dpi=200)
+    plt.imshow(image.reshape(8, 98))
+    plt.title("psMNIST", fontsize=20)
+    ShowOrSavePlot(PLOT_DATAVIS_PATH, "psMNIST_Series")
+
 
 if __name__ == "__main__":
-    # PlotMNISTVariant()
+     PlotMNISTVariant()
     # for tau in [17, 30]:
     #     PlotMarkeyGlass(tau)
     # ReadAndPlotAll(DATA_DIR, PLOTS_DIR, psMNIST.conf.PROBLEM_NAME, True)
-    #  ReadAndPlotAll(DATA_DIR, PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
-    PrintAllDataAllSubProblem(DATA_DIR, psMNIST.conf.PROBLEM_NAME, True)
-    PrintAllDataAllSubProblem(DATA_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
+    # ReadAndPlotAll(DATA_DIR, PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
+    # PrintAllDataAllSubProblem(DATA_DIR, psMNIST.conf.PROBLEM_NAME, True)
+    # PrintAllDataAllSubProblem(DATA_DIR, MackeyGlass.Config.PROBLEM_NAME, False)

@@ -78,7 +78,7 @@ def ModelEvaluation(model, testName, saveDir, dataset, batchSize, epochs, monito
     print(f"Test {monitorStat[-3:]}: {result[1]}")
 
     try:
-        SaveTrainingData(saveDir, history, result)
+        SaveTrainingData(f"{saveDir}/{testName}", history, result)
     except Exception as e:
         print(f"\nexception during Data saving:\n {e}\n")
         raise

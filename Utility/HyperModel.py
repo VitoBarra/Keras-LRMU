@@ -1,6 +1,6 @@
 import keras_tuner as kt
 import tensorflow.keras as ks
-from ESN.layer import *
+from Reservoir.layer import *
 from tensorflow.keras.initializers import *
 from Utility.ModelBuilder import ModelBuilder
 from enum import Enum
@@ -57,12 +57,11 @@ class HyperModel(kt.HyperModel):
         self.CreateModelBuilder()
         return self
 
-    def LMU_ESN(self, useLeaky=True, useInputScaler=True):
-        self.ModelName = "LMU-ESN"
+    def LMU_ESN(self, useLeaky=True):
+        self.ModelName = "LMU-Reservoir"
         self.UseLRMU = False
         self.UseESN = True
         self.UseLeaky = useLeaky
-        self.UseInputScaler = useInputScaler
         self.CreateModelBuilder()
         return self
 
@@ -73,12 +72,11 @@ class HyperModel(kt.HyperModel):
         self.CreateModelBuilder()
         return self
 
-    def LRMU_ESN(self, useLeaky=True, useInputScaler=True):
-        self.ModelName = "LRMU-ESN"
+    def LRMU_ESN(self, useLeaky=True):
+        self.ModelName = "LRMU-Reservoir"
         self.UseLRMU = True
         self.UseESN = True
         self.UseLeaky = useLeaky
-        self.UseInputScaler = useInputScaler
         self.CreateModelBuilder()
         return self
 
@@ -91,10 +89,10 @@ class HyperModel(kt.HyperModel):
         else:
             spectraRadius = hp.Float("ESN_spectraRadius", min_value=0.8, max_value=1.1, step=0.01)
             leaky = hp.Float("ESN_leaky", min_value=0.5, max_value=1, step=0.1) if self.UseLeaky else 1
-            inputScaler = hp.Float("ESN_inputScaler", min_value=0.5, max_value=2,
-                                   step=0.25) if self.UseInputScaler else 1
+            inputScaler = hp.Float("ESN_inputScaler", min_value=0.5, max_value=2, step=0.25)
+            biasScaler = hp.Float("ESN_BiasScaler", min_value=0.5, max_value=2, step=0.25)
             hiddenCell = ReservoirCell(hiddenUnit, spectral_radius=spectraRadius, leaky=leaky,
-                                       input_scaling=inputScaler)
+                                       input_scaling=inputScaler, usebias=True, bias_scaling=biasScaler)
         return hiddenCell
 
     def LMUSelectParam(self, hp):

@@ -3,7 +3,7 @@ from Problems.psMNIST.DataGeneration import *
 import LMU.layers
 from Utility.PlotUtil import *
 from Utility.ModelUtil import *
-from ESN.layer import *
+from Reservoir.layer import *
 from Utility.HyperModel import HyperModel
 from Utility.ModelBuilder import ModelBuilder
 import tensorflow.keras as ks
@@ -14,7 +14,8 @@ from GlobalConfig import *
 def LMU_Original():
     Builder = ModelBuilder(PROBLEM_NAME, "LMU")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LMU(1, 256, SEQUENCE_LENGTH, SimpleRNNCell(units=212), False,
+    Builder.LMU(1, 256, SEQUENCE_LENGTH,
+                SimpleRNNCell(units=212), False,
                 False, False, True, False, 1)
     return Builder.BuildClassification(CLASS_NUMBER)
 
@@ -22,7 +23,8 @@ def LMU_Original():
 def LMU_ESN_comp():
     Builder = ModelBuilder(PROBLEM_NAME, "LMU_ESN")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LMU(1, 256, SEQUENCE_LENGTH, ReservoirCell(212, spectral_radius=0.89, leaky=0.9,input_scaling=1), False,
+    Builder.LMU(1, 256, SEQUENCE_LENGTH,
+                ReservoirCell(212, spectral_radius=0.99, leaky=0.8, input_scaling=1.75, bias_scaling=1.0), False,
                 False, False, True, False,
                 1)
     return Builder.BuildClassification(CLASS_NUMBER)
@@ -31,9 +33,10 @@ def LMU_ESN_comp():
 def LRMU_comp():
     Builder = ModelBuilder(PROBLEM_NAME, "LRMU")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LRMU(1, 256, SEQUENCE_LENGTH, SimpleRNNCell(212, kernel_initializer=keras.initializers.GlorotUniform),
+    Builder.LRMU(1, 256, SEQUENCE_LENGTH,
+                 SimpleRNNCell(212, kernel_initializer=keras.initializers.GlorotUniform),
                  False, False, True, False,
-                 None, None, 1, None,
+                 None, None, 1.75, None,
                  1)
     return Builder.BuildClassification(CLASS_NUMBER)
 
@@ -41,7 +44,8 @@ def LRMU_comp():
 def LRMU_ESN_comp():
     Builder = ModelBuilder(PROBLEM_NAME, "LRMU_ESN")
     Builder.inputLayer(SEQUENCE_LENGTH)
-    Builder.LRMU(1, 256, SEQUENCE_LENGTH, ReservoirCell(212, spectral_radius=0.87, leaky=0.9,input_scaling=1),
+    Builder.LRMU(1, 256, SEQUENCE_LENGTH,
+                 ReservoirCell(212, spectral_radius=0.87, leaky=0.9, input_scaling=1, bias_scaling=1.0),
                  False, False, True, False,
                  None, None, 2.0, None,
                  1)
