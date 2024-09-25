@@ -4,12 +4,12 @@ from Reservoir.Inizializer import *
 import tensorflow as tf
 
 
-@tf.keras.utils.register_keras_serializable("keras-esn")
+@tf.keras.utils.register_keras_serializable("keras-ReservoirCell")
 class ReservoirCell(keras.layers.Layer):
 
     # builds a reservoir as a hidden dynamical layer for a recurrent neural network
     def __init__(self, units,
-                 input_scaling=1.0, usebias=False, bias_scaling=1.0,
+                 input_scaling=1.0, useBias=True, bias_scaling=1.0,
                  spectral_radius=0.99,
                  leaky=1, activation=tf.nn.tanh, seed=0,
                  **kwargs):
@@ -20,7 +20,7 @@ class ReservoirCell(keras.layers.Layer):
         self.units = units
         self.state_size = units
         self.input_scaling = input_scaling
-        self.usebias = usebias
+        self.usebias = useBias
         self.bias_scaling = bias_scaling
         self.spectral_radius = spectral_radius
         self.leaky = leaky  # leaking rate

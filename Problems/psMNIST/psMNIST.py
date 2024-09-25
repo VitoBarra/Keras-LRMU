@@ -55,7 +55,10 @@ def LRMU_ESN_comp():
 def RunEvaluation(batchSize=64, epochs=10):
     dataSet = psMNISTDataset(True, 0.1)
     dataSet.ToCategoricalLabel()
+    dataSet.PrintSplit()
+
     saveDir = f"{DATA_DIR}/{PROBLEM_NAME}/comp"
+
 
     ModelEvaluation(LRMU_ESN_comp(), "LRMU_ESN_comp", saveDir, dataSet, batchSize, epochs, "val_accuracy")
     ModelEvaluation(LMU_ESN_comp(), "LMU_ESN_comp", saveDir, dataSet, batchSize, epochs, "val_accuracy")
@@ -64,16 +67,16 @@ def RunEvaluation(batchSize=64, epochs=10):
 
 def RunTuning(dataPartition, max_trial, epochs):
     if 5000 > dataPartition > 50000:
-        raise ValueError("Data partition must be between 10k and 50k")
+        raise ValueError("Data partition must be between 5k and 50k")
     lengthName = f"{str(dataPartition)[0:1]}k"
     dataSet = psMNISTDataset(True, 0.1, dataPartition)
     dataSet.ToCategoricalLabel()
-
+    dataSet.PrintSplit()
     hyperModels = HyperModel("psMNIST-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, 0).SetUpClassification(CLASS_NUMBER)
     hyperModels.ForceLMUParam(1, 1, 256, SEQUENCE_LENGTH, 212).ForceConnection(False, False, True, False)
-    # TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{lengthName}_parSet", PROBLEM_NAME, dataSet, epochs,
-    #               max_trial, True)
-    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{lengthName}_parSet", PROBLEM_NAME, dataSet, epochs,
+    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_{lengthName}_Final", PROBLEM_NAME, dataSet, epochs,
                   max_trial, True)
-    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{lengthName}_parSet", PROBLEM_NAME, dataSet, epochs,
+    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_{lengthName}_Final", PROBLEM_NAME, dataSet, epochs,
+                  max_trial, True)
+    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_{lengthName}_Final", PROBLEM_NAME, dataSet, epochs,
                   max_trial, True)

@@ -56,15 +56,15 @@ def PlotMNISTVariant():
 
     plt.figure(figsize=(5, 1.5), dpi=200)
     plt.imshow(image.reshape(8, 98))
-    plt.title("psMNIST", fontsize=20)
+    plt.title(f"psMNIST-Digit = {label}", fontsize=20)
     ShowOrSavePlot(PLOT_DATAVIS_PATH, "psMNIST_Series")
 
 
 if __name__ == "__main__":
-     PlotMNISTVariant()
-    # for tau in [17, 30]:
+     # PlotMNISTVariant()
+    #  for tau in [17, 30]:
     #     PlotMarkeyGlass(tau)
-    # ReadAndPlotAll(DATA_DIR, PLOTS_DIR, psMNIST.conf.PROBLEM_NAME, True)
-    # ReadAndPlotAll(DATA_DIR, PLOTS_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
-    # PrintAllDataAllSubProblem(DATA_DIR, psMNIST.conf.PROBLEM_NAME, True)
-    # PrintAllDataAllSubProblem(DATA_DIR, MackeyGlass.Config.PROBLEM_NAME, False)
+    #  ReadAndPlotAll(DATA_DIR, PLOTS_DIR, f"{psMNIST.conf.PROBLEM_NAME}", True)
+    #  ReadAndPlotAll(DATA_DIR, PLOTS_DIR, f"{MackeyGlass.Config.PROBLEM_NAME}", False)
+     PrintAllDataAllSubProblem(DATA_DIR, psMNIST.conf.PROBLEM_NAME, True)
+     PrintAllDataAllSubProblem(DATA_DIR, MackeyGlass.Config.PROBLEM_NAME, False)

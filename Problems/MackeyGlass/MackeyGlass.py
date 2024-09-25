@@ -62,6 +62,7 @@ def LRMU_ESN_comp(tau, activation):
 
 def RunEvaluation(sample, tau, activation, batchSize, epochs):
     dataSet = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
+    dataSet.PrintSplit()
 
     saveDir = f"{DATA_DIR}/{PROBLEM_NAME}/T{tau}_Final"
     monitorStat = "val_mae"
@@ -79,14 +80,15 @@ def RunEvaluation(sample, tau, activation, batchSize, epochs):
 
 def RunTuning(sample, tau, activation, epoch, max_trial):
     dataSet = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
+    dataSet.PrintSplit()
 
     hyperModels = HyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, 0).SetUpPrediction(1, activation)
     hyperModels.ForceLMUParam(1, 1, 16, 64, 176).ForceConnection(False, False, True, False)
-    # TunerTraining(hyperModels.LMU(), f"LMU_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
+    # TunerTraining(hyperModels.LMU(), f"LMU_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
     #               max_trial, True)
-    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
+    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
                   max_trial, False)
-    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
+    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
                   max_trial, False)
-    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_T{tau}_ParSet_con", PROBLEM_NAME, dataSet, epoch,
+    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
                   max_trial, False)

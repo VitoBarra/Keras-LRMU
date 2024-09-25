@@ -130,6 +130,17 @@ class DataSet(object):
     def Unpack(self):
         return self.Training, self.Validation, self.Test
 
+    def PrintSplit(self):
+        string = ""
+        if self.Training is not None:
+            string += f"Training:{self.Training.Data.shape}, "
+        if self.Validation is not None:
+            string += f"Validation:{self.Validation.Data.shape}, "
+        if self.Test is not None:
+            string += f"Test:{self.Test.Data.shape}"
+
+        print(string)
+
     @classmethod
     def init(cls, training, Validation, Test):
         instance = DataSet(None, None)

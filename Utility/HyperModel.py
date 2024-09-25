@@ -58,7 +58,7 @@ class HyperModel(kt.HyperModel):
         return self
 
     def LMU_ESN(self, useLeaky=True):
-        self.ModelName = "LMU-Reservoir"
+        self.ModelName = "LMU-ESN"
         self.UseLRMU = False
         self.UseESN = True
         self.UseLeaky = useLeaky
@@ -73,7 +73,7 @@ class HyperModel(kt.HyperModel):
         return self
 
     def LRMU_ESN(self, useLeaky=True):
-        self.ModelName = "LRMU-Reservoir"
+        self.ModelName = "LRMU-ESN"
         self.UseLRMU = True
         self.UseESN = True
         self.UseLeaky = useLeaky
@@ -92,7 +92,7 @@ class HyperModel(kt.HyperModel):
             inputScaler = hp.Float("ESN_inputScaler", min_value=0.5, max_value=2, step=0.25)
             biasScaler = hp.Float("ESN_BiasScaler", min_value=0.5, max_value=2, step=0.25)
             hiddenCell = ReservoirCell(hiddenUnit, spectral_radius=spectraRadius, leaky=leaky,
-                                       input_scaling=inputScaler, usebias=True, bias_scaling=biasScaler)
+                                       input_scaling=inputScaler, useBias=True, bias_scaling=biasScaler)
         return hiddenCell
 
     def LMUSelectParam(self, hp):
