@@ -1,79 +1,105 @@
 import tensorflow.keras as keras
-from Reservoir.layer import ReservoirCell
-from sklearn.linear_model import RidgeClassifier
 import tensorflow as tf
-import LRMU as lrmu
 import numpy as np
+from Reservoir.layer import ReservoirCell
+from sklearn.linear_model import RidgeClassifier, Ridge
+from LRMU.layer import LRMU
+from LRMU.utility import ModelType
 
-class LRMU_ESN(keras.Model):
+
+class LRMU_ESN_Ridge(keras.Model):
     # Implements an Echo State Network model for time-series classification problems
     #
     # The architecture comprises a recurrent layer with ReservoirCell,
     # followed by a trainable dense readout layer for classification
-    def __init__(self, memoryDimension, order, theta, hiddenCell=None,
-                 hiddenToMemory=False, memoryToMemory=False,inputToHiddenCell=False, useBias=False,
-                 hiddenEncoderScaler=1.0, memoryEncoderScaler=1.0,InputEncoderScaler=1.0, biasScaler=1.0,
-                 seed=0,
-                 units=1,
-                 input_scaling=1., bias_scaling=1.0, spectral_radius=0.9,
-                 leaky=1,
-                 readout_regularizer=1.0,
-                 activation=tf.nn.tanh,
-                 features_dim=1,
-                 batch_size=None,
+    def __init__(self,ModelType, sequenceLenght, memoryDimension, order, theta,
+                 hiddenToMemory=False, memoryToMemory=False, inputToHiddenCell=False, useBias=False,
+                 hiddenEncoderScaler=None, memoryEncoderScaler=None, InputEncoderScaler=None, biasScaler=None,
+                 units=1, activation=tf.nn.tanh, spectral_radius=0.99, leaky=1,
+                 input_scaling=1.0, bias_scaling=1.0,
+                 readout_regularizer=1.0, features_dim=1, batch_size=None,seed=0,
                  **kwargs):
 
         super().__init__(**kwargs)
+        self.metric_cust = None
+        self.modelType = None
         if batch_size is not None:
             self.reservoir = keras.Sequential([
-
-                keras.Input(batch_input_shape=(batch_size, None, features_dim)),
-                keras.layers.RNN(cell=ReservoirCell(units=units,
-                                                    input_scaling=input_scaling,
-                                                    bias_scaling=bias_scaling,
-                                                    spectral_radius=spectral_radius,
-                                                    leaky=leaky, activation=activation),
-                                 stateful=True)
+                keras.Input(shape=(batch_size, None, features_dim)),
+                LRMU(memoryDimension, order, theta, ReservoirCell(units=units,
+                                                                  input_scaling=input_scaling,
+                                                                  bias_scaling=bias_scaling,
+                                                                  spectral_radius=spectral_radius,
+                                                                  leaky=leaky, activation=activation),
+                     hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                     hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler, seed)
             ])
 
         else:
             self.reservoir = keras.Sequential([
-                keras.layers.RNN(cell=ReservoirCell(units=units,
-                                                    input_scaling=input_scaling,
-                                                    bias_scaling=bias_scaling,
-                                                    spectral_radius=spectral_radius,
-                                                    leaky=leaky, activation=activation))])
+                keras.Input(shape=(sequenceLenght, 1)),
+                LRMU(memoryDimension, order, theta, ReservoirCell(units=units,
+                                                                  input_scaling=input_scaling,
+                                                                  bias_scaling=bias_scaling,
+                                                                  spectral_radius=spectral_radius,
+                                                                  leaky=leaky, activation=activation),
+                     hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                     hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler, seed)
+            ])
 
-        self.readout = RidgeClassifier(alpha=readout_regularizer, solver='svd')
+        if ModelType == ModelType.Classification:
+            self.readout = RidgeClassifier(alpha=readout_regularizer, solver='svd')
+        elif ModelType == ModelType.Prediction:
+            self.readout = Ridge(alpha=readout_regularizer, solver='svd')
         self.units = units
         self.features_dim = features_dim
         self.batch_size = batch_size
 
-    def compute_output(self, inputs):
-        # calculate the reservoir states and the corresponding output of the model
-        reservoir_states = self.reservoir(inputs)
-        output = self.readout.predict(reservoir_states)
-
-        return output
+    def custom_compile(self, metric_cust):
+        self.metric_cust = metric_cust
+        return self
 
     def call(self, inputs):
-
-        # create a numpy version of the input, which has an explicit first dimension given by num_samples
-
         reservoir_states = self.reservoir(inputs)
-        output = self.readout.predict(reservoir_states)
+        output = self.readout.predict(reservoir_states.numpy())
         return output
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, validation_data, callbacks=None, **kwargs):
         # For all the RC methods, we avoid doing the same reservoir operations at each epoch
         # To this aim, we pre-compute all the states and then we invoke the readout fit method
 
+        if callbacks is not None:
+            for callback in callbacks:
+                callback.set_model(self)
+                callback.on_train_begin()
+
         x_train_states = self.reservoir(x)
         self.readout.fit(x_train_states, y)
+        prediction = self.readout.predict(x_train_states)
 
-    def evaluate(self, x, y):
-        x_train_states = self.reservoir(x)
-        return self.readout.score(x_train_states, y)
+        metric_results = {}
+        for metric in self.metric_cust:
+            metric_results[metric.name] = metric(y, prediction)
+
+        for metric in self.metric_cust:
+            if validation_data is not None:
+                val_x_state = self.reservoir(validation_data[0])
+                val_pred = self.readout.predict(val_x_state)
+                metric_results[f"val_{metric.name}"] = metric(validation_data[1], val_pred)
+
+        if callbacks is not None:
+            for callback in callbacks:
+                callback.on_train_end()
+
+        history = keras.callbacks.History()
+        history.history = metric_results
+        return history
+
+    def evaluate(self, x, y, **kwargs):
+        x_states = self.reservoir(x)
+        y_prediction = self.readout.predict(x_states)
+
+        return [self.metric_cust[0](y,y_prediction),self.metric_cust[1](y,y_prediction)]
 
     def evaluate_batch(self, x, y):
 

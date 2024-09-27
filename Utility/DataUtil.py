@@ -86,6 +86,12 @@ class DataLabel(object):
         self.Label = tf.keras.utils.to_categorical(self.Label)
         self.isCategorical = True
 
+    def Slice(self, start, end):
+        self.Data = self.Data[start:end]
+        self.Label = self.Label[start:end]
+        assert self.Data.shape[0] == self.Label.shape[0]
+
+
 
 class DataSet(object):
 
@@ -140,6 +146,20 @@ class DataSet(object):
             string += f"Test:{self.Test.Data.shape}"
 
         print(string)
+
+    def FlattenSeriesData(self):
+        if self.Data is not None:
+            self.Data.Data = self.Data.Data.reshape(self.Data.Data.shape[0], -1)
+            self.Data.Label = self.Data.Label.reshape(self.Data.Label.shape[0], -1)
+        if self.Training is not None:
+            self.Training.Data = self.Training.Data.reshape(self.Training.Data.shape[0], -1)
+            self.Training.Label = self.Training.Label.reshape(self.Training.Label.shape[0], -1)
+        if self.Validation is not None:
+            self.Validation.Data = self.Validation.Data.reshape(self.Validation.Data.shape[0], -1)
+            self.Validation.Label = self.Validation.Label.reshape(self.Validation.Label.shape[0], -1)
+        if self.Test is not None:
+            self.Test.Data = self.Test.Data.reshape(self.Test.Data.shape[0], -1)
+            self.Test.Label = self.Test.Label.reshape(self.Test.Label.shape[0], -1)
 
     @classmethod
     def init(cls, training, Validation, Test):

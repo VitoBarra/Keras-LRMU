@@ -189,8 +189,8 @@ class LRMUCell(keras.layers.Layer):
 class LRMU(keras.layers.Layer):
 
     def __init__(self, memoryDimension, order, theta, hiddenCell=None,
-                 hiddenToMemory=False, memoryToMemory=False,inputToHiddenCell=False, useBias=False,
-                 hiddenEncoderScaler=1.0, memoryEncoderScaler=1.0,InputEncoderScaler=1.0, biasScaler=1.0,
+                 hiddenToMemory=False, memoryToMemory=False, inputToHiddenCell=False, useBias=False,
+                 hiddenEncoderScaler=1.0, memoryEncoderScaler=1.0, InputEncoderScaler=1.0, biasScaler=1.0,
                  seed=0, returnSequences=False, **kwargs):
         super().__init__(**kwargs)
         self.MemoryDim = memoryDimension
@@ -218,7 +218,7 @@ class LRMU(keras.layers.Layer):
         self.layer = keras.layers.RNN(
             LRMUCell(self.MemoryDim, self.Order, self.Theta, self.HiddenCell,
                      self.HiddenToMemory, self.MemoryToMemory, self.InputToHiddenCell, self.UseBias,
-                     self.HiddenEncoderScaler,self.MemoryEncoderScaler , self.InputEncoderScaler, self.BiasScaler,
+                     self.HiddenEncoderScaler, self.MemoryEncoderScaler, self.InputEncoderScaler, self.BiasScaler,
                      self.Seed), return_sequences=self.ReturnSequence)
 
         self.layer.build(input_shape)

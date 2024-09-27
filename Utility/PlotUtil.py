@@ -188,13 +188,13 @@ def PrintAllData(path, classification):
         metric_in_history = "val_mae"
         metric_to_print = "mae"
 
-    print(f"|---------model_name----------|-Val_loss-|-Val_{metric_to_print}-|-t_loss-|-t_{metric_to_print}-|")
+    print(f"|---------model_name----------|-Val_{metric_to_print}-|-t_{metric_to_print}-|")
     PrintTestInFolder(path, metric_in_history)
 
 def PrintTestInFolder(path, metric_in_history):
     for test_name in getDirectSubDir(f"{path}"):
         history, result = ReadTrainingData(f"{path}/{test_name.name}")
-        print(f"{test_name.name:30} & {history['val_loss'][-1]:5.4f} & {history[metric_in_history][-1]:5.4f} & {result[0]:5.4f} & {result[1]:5.4f} \\\\")
+        print(f"{test_name.name:30}  & {history[metric_in_history][-1]:5.7f}  & {result[1]:5.7f} \\\\")
 
 def PrintAllDataAllSubProblem(data_path,problem_name, classification):
     for dir in getDirectSubDir(f"{data_path}/{problem_name}"):

@@ -51,11 +51,14 @@ def EvaluateModel(model, testName, dataSet: DataSet, batch_size=128, epochs=15, 
                         callbacks=[model_checkpoint_callback, early_stop, time_tracker]
                         )
     try:
-        history.history["time"] = time_tracker.logs
-        model = ks.models.load_model(checkpoint_filepath)
-        directory = f"{BEST_MODEL_DIR}/{testName}"
-        os.makedirs(directory, exist_ok=True)
-        model.save(f"{directory}/best_model.keras")
+        if history is not None:
+            history.history["time"] = time_tracker.logs
+        if os.path.exists(checkpoint_filepath):
+            model = ks.models.load_model(checkpoint_filepath)
+            directory = f"{BEST_MODEL_DIR}/{testName}"
+            os.makedirs(directory, exist_ok=True)
+            model.save(f"{directory}/best_model.keras")
+
         result = model.evaluate(test.Data, test.Label, batch_size=batch_size)
         return history, result
     except FileNotFoundError:
@@ -66,16 +69,15 @@ def EvaluateModel(model, testName, dataSet: DataSet, batch_size=128, epochs=15, 
         raise
 
 
-def ModelEvaluation(model, testName, saveDir, dataset, batchSize, epochs, monitorStat):
+def ModelEvaluation(model, testName,saveDir, dataset, batchSize, epochs, monitorStat):
     try:
         history, result = EvaluateModel(model, testName, dataset, batchSize, epochs, monitorStat)
+        print(f"total training time: {sum(history.history['time'])}s", )
+        print(f"Test loss: {result[0]}")
+        print(f"Test {monitorStat[-3:]}: {result[1]}")
     except Exception as e:
         print(f"\nError during model evaluation:\n {e}\n")
         raise
-
-    print(f"total training time: {sum(history.history['time'])}s", )
-    print(f"Test loss: {result[0]}")
-    print(f"Test {monitorStat[-3:]}: {result[1]}")
 
     try:
         SaveTrainingData(f"{saveDir}/{testName}", history, result)
@@ -84,16 +86,16 @@ def ModelEvaluation(model, testName, saveDir, dataset, batchSize, epochs, monito
         raise
 
 
-def TunerTraining(hyperModel, tuningName, problemName, dataSet, epochs=10, maxTrial=100,
+def TunerTraining(hyperModel,modelName, tuningName, problemName, dataSet, epochs=10, maxTrial=100,
                   override_test=False):
     training, validation, _ = dataSet.Unpack()
-    testDir = f"{TUNING_DIR}/{problemName}/{tuningName}"
+    testDir = f"{TUNING_DIR}/{problemName}/{modelName}/{tuningName}"
     folder_already_exists = os.path.exists(testDir)
 
     if folder_already_exists:
         if override_test:
             shutil.rmtree(testDir)
-            print(f"old trial for {tuningName} deleted \n\n")
+            print(f"old trial for {modelName}/{tuningName} deleted \n\n")
         else:
             raise Exception("folder already exists and the function is been called without override option")
 
@@ -142,7 +144,7 @@ def TunerTraining(hyperModel, tuningName, problemName, dataSet, epochs=10, maxTr
     try:
         best_model = tuner.get_best_models(num_models=1)[0]
         best_model.summary()
-        directory = f"{BEST_MODEL_DIR}/{tuningName}"
+        directory = f"{BEST_MODEL_DIR}/{modelName}/{tuningName}"
         os.makedirs(directory, exist_ok=True)
         best_model.save(f"{directory}/best_model_tuning.keras")
     except Exception as e:

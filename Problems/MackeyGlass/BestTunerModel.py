@@ -4,7 +4,7 @@ from Problems.MackeyGlass.Config import *
 from Utility.ModelBuilder import ModelBuilder
 
 def LMU_BestModel(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LMU_{tau}")
+    Builder = ModelBuilder(f"LMU_{tau}", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
         Builder.LMU(2, 1, 44, SimpleRNNCell(176), False,
@@ -15,7 +15,7 @@ def LMU_BestModel(tau, activation):
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 def LMU_ESN_BestModel(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LMU_ESN_T{tau}")
+    Builder = ModelBuilder(f"LMU_ESN_T{tau}", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
         Builder.LMU(4, 20, 56, ReservoirCell(240, spectral_radius=0.95, leaky=0.7), False,
@@ -28,7 +28,7 @@ def LMU_ESN_BestModel(tau, activation):
 
 
 def LRMU_BestModel(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_T{tau}")
+    Builder = ModelBuilder(f"LRMU_T{tau}", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
         Builder.LRMU(1, 12, 64, SimpleRNNCell(144, kernel_initializer=keras.initializers.GlorotUniform),
@@ -42,7 +42,7 @@ def LRMU_BestModel(tau, activation):
 
 
 def LRMU_ESN_BestModel(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_ESN_T{tau}")
+    Builder = ModelBuilder(f"LRMU_ESN_T{tau}", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     if tau == 17:
         Builder.LRMU(4, 1, 144, ReservoirCell(320, spectral_radius=1, leaky=0.5),

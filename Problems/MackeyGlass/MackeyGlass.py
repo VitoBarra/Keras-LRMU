@@ -7,74 +7,89 @@ from Utility.ModelUtil import ModelEvaluation, TunerTraining
 from tensorflow.keras.layers import SimpleRNNCell
 from GlobalConfig import *
 import tensorflow.keras as keras
+from LRMU.Model import LRMU_ESN_Ridge
+from LRMU.utility import ModelType
+import tensorflow.keras
 
 
 def FF_BaseLine(tau, activation):
-    inputs = keras.Input(shape=(SEQUENCE_LENGTH,))
-    output = keras.layers.Dense(1, activation=activation, name=f"FF_T{tau}_{activation}_input")(inputs)
-    model = keras.Model(inputs=inputs, outputs=output, name=f"FF_T{tau}_{activation}_BaseLine")
-    model.summary()
-    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-    return model
+    Builder = ModelBuilder("FF_Baseline", PROBLEM_NAME)
+    Builder.inputLayer(SEQUENCE_LENGTH,Flatten=True)
+    Builder.FF_Baseline()
+    return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
+
 
 
 def LMU_Base(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LMU_{tau}")
+    Builder = ModelBuilder(f"LMU_T{tau}", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     Builder.LMU(1, 16, 64,
                 SimpleRNNCell(176), False,
-                False, False, True, False, 1)
+                True, True, True, False, 1)
 
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
-# comp models
+# Final Model
 def LMU_ESN_comp(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LMU_ESN_T{tau}")
+    Builder = ModelBuilder(f"LMU_ESN_T{tau}", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     Builder.LMU(1, 16, 64,
-                ReservoirCell(176, spectral_radius=0.99, leaky=0.8, input_scaling=1.75, bias_scaling=1.0), False,
-                False, False, True, False, 1)
+                ReservoirCell(176, spectral_radius=0.87, leaky=0.5, input_scaling=1.75, bias_scaling=1.75), False,
+                True, True, True, False, 1)
 
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
 def LRMU_comp(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_T{tau}")
+    Builder = ModelBuilder(f"LRMU", PROBLEM_NAME,f"T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
 
     Builder.LRMU(1, 16, 64,
                  SimpleRNNCell(176),
-                 False, False, True, False,
-                 None, None, 0.5, None, 1)
+                 True, True, True, False,
+                 1, 1, 0.5, None, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
 
 
 def LRMU_ESN_comp(tau, activation):
-    Builder = ModelBuilder(PROBLEM_NAME, f"LRMU_ESN_T{tau}")
+    Builder = ModelBuilder(f"LRMU_ESN", PROBLEM_NAME,f"T{tau}")
     Builder.inputLayer(SEQUENCE_LENGTH)
     Builder.LRMU(1, 16, 64,
-                 ReservoirCell(176, spectral_radius=0.91, leaky=0.5, input_scaling=0.5, bias_scaling=1.0),
-                 False, False, True, False,
-                 None, None, 0.5, None, 1)
+                 ReservoirCell(176, spectral_radius=1.1, leaky=0.9, input_scaling=0.5, bias_scaling=2.0),
+                 True, True, True, False,
+                 1, 1, 1.25, None, 1)
     return Builder.BuildPrediction(PREDICTION_DIMENSION, activation)
+
+
+def LRMU_ESN_R(tau, activation):
+    model = LRMU_ESN_Ridge(ModelType.Prediction, SEQUENCE_LENGTH, 1, 16, 64,
+                           True, True, True, False, None,
+                           None, 1.25, None,
+                           176, tf.nn.tanh, 1.1, 0.9, 0.5, 2.0)
+    model.name = f"LRMU_ESN_R_{PROBLEM_NAME}_T{tau}"
+    model.summary()
+    return model.custom_compile([keras.metrics.MeanSquaredError(), keras.metrics.MeanAbsoluteError()], )
 
 
 def RunEvaluation(sample, tau, activation, batchSize, epochs):
     dataSet = MackeyGlassDataset(0.1, 0.1, sample, SEQUENCE_LENGTH, 15, tau, 0)
     dataSet.PrintSplit()
+    dataSet.FlattenSeriesData()
 
     saveDir = f"{DATA_DIR}/{PROBLEM_NAME}/T{tau}_Final"
     monitorStat = "val_mae"
 
-    ModelEvaluation(FF_BaseLine(tau, activation), f"FF_{activation}_BaseLine", saveDir, dataSet, batchSize, epochs,
+    # ModelEvaluation(FF_BaseLine(tau, activation), f"FF_{activation}_BaseLine", saveDir, dataSet, batchSize, epochs,
+    #                 monitorStat)
+    ModelEvaluation(LRMU_ESN_R(tau, activation), f"LRMU_ESN_RO", saveDir, dataSet, batchSize, epochs,
                     monitorStat)
-    ModelEvaluation(LRMU_ESN_comp(tau, activation), f"LRMU_ESN_{activation}_comp", saveDir, dataSet, batchSize, epochs,
-                    monitorStat)
-    ModelEvaluation(LMU_ESN_comp(tau, activation), f"LMU_ESN_{activation}_comp", saveDir, dataSet, batchSize, epochs,
-                    monitorStat)
-    ModelEvaluation(LRMU_comp(tau, activation), f"LRMU_{activation}_comp", saveDir, dataSet, batchSize, epochs,
-                    monitorStat)
+    # ModelEvaluation(LRMU_ESN_comp(tau, activation), f"LRMU_ESN_{activation}_comp", saveDir, dataSet, batchSize, epochs,
+    #                 monitorStat)
+    # ModelEvaluation(LMU_ESN_comp(tau, activation), f"LMU_ESN_{activation}_comp", saveDir, dataSet, batchSize, epochs,
+    #                 monitorStat)
+    # ModelEvaluation(LRMU_comp(tau, activation), f"LRMU_{activation}_comp", saveDir, dataSet, batchSize, epochs,
+    #                 monitorStat)
     # ModelEvaluation(LMU_Base(tau, activation), f"LMU_{activation}", saveDir, dataSet, batchSize, epochs, monitorStat)
 
 
@@ -83,12 +98,23 @@ def RunTuning(sample, tau, activation, epoch, max_trial):
     dataSet.PrintSplit()
 
     hyperModels = HyperModel("MackeyGlass-hyperModel", PROBLEM_NAME, SEQUENCE_LENGTH, 0).SetUpPrediction(1, activation)
-    hyperModels.ForceLMUParam(1, 1, 16, 64, 176).ForceConnection(False, False, True, False)
-    # TunerTraining(hyperModels.LMU(), f"LMU_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
+    hyperModels.ForceLMUParam(1, 1, 16, 64, 176).ForceConnection(True, True, True, False)
+    # TunerTraining(hyperModels.LRMU_ESN_RC(), f"LRMU_ESN_RC", f"T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
+    #               max_trial, False)
+    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN", f"T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
+                  max_trial, True)
+    # TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN", f"T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
     #               max_trial, True)
-    TunerTraining(hyperModels.LRMU_ESN(), f"LRMU_ESN_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
-                  max_trial, False)
-    TunerTraining(hyperModels.LMU_ESN(), f"LMU_ESN_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
-                  max_trial, False)
-    TunerTraining(hyperModels.LRMU(), f"LRMU_Tuning_T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
-                  max_trial, False)
+    TunerTraining(hyperModels.LRMU(), f"LRMU", f"T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
+                  max_trial, True)
+    # TunerTraining(hyperModels.LMU(), f"LMU",f"T{tau}_Final", PROBLEM_NAME, dataSet, epoch,
+    #               max_trial, True)
+
+
+def PrintSummary(tau, activation):
+    FF_BaseLine(tau, activation)
+    LRMU_ESN_R(tau, activation)
+    LRMU_ESN_comp(tau, activation)
+    LMU_ESN_comp(tau, activation)
+    LRMU_comp(tau, activation)
+    LMU_Base(tau, activation)

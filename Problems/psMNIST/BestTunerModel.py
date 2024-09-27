@@ -5,7 +5,7 @@ from Utility.ModelBuilder import ModelBuilder
 
 
 def LMU_ESN_BestModel():
-    Builder = ModelBuilder(PROBLEM_NAME, "LMU_ESN")
+    Builder = ModelBuilder("LMU_ESN", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     Builder.LMU(32, 24, SEQUENCE_LENGTH, ReservoirCell(160, spectral_radius=1.05, leaky=1), False,
                 True, True, False, False, 1)
@@ -13,7 +13,7 @@ def LMU_ESN_BestModel():
 
 
 def LRMU_BestModel():
-    Builder = ModelBuilder(PROBLEM_NAME, "LRMU")
+    Builder = ModelBuilder("LRMU", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     Builder.LRMU(2, 48, SEQUENCE_LENGTH, SimpleRNNCell(288, kernel_initializer=keras.initializers.GlorotUniform),
                  False, True, True, False,
@@ -22,7 +22,7 @@ def LRMU_BestModel():
 
 
 def LRMU_ESN_BestModel():
-    Builder = ModelBuilder(PROBLEM_NAME, "LRMU_ESN")
+    Builder = ModelBuilder("LRMU_ESN", PROBLEM_NAME)
     Builder.inputLayer(SEQUENCE_LENGTH)
     Builder.LRMU(8, 64, SEQUENCE_LENGTH, ReservoirCell(320, spectral_radius=1.1, leaky=1),
                  False, True, True, False,

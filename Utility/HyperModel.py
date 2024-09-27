@@ -3,18 +3,14 @@ import tensorflow.keras as ks
 from Reservoir.layer import *
 from tensorflow.keras.initializers import *
 from Utility.ModelBuilder import ModelBuilder
-from enum import Enum
-
-
-class ModelType(Enum):
-    Classification = 1
-    Prediction = 2
+from LRMU.utility import ModelType
 
 
 class HyperModel(kt.HyperModel):
 
     def __init__(self, hyperModelName: str, problemName: str, sequenceLength: int, seed: int = 0):
         super().__init__(hyperModelName)
+        self.IsCategorical = None
         self.Seed = seed
         self.ProblemName = problemName
         self.SequenceLength = sequenceLength
@@ -31,6 +27,7 @@ class HyperModel(kt.HyperModel):
         self.ModelName = None
         self.UseESN = None
         self.UseLRMU = None
+        self.UseRidge = None
 
         self.LMUForceParam = False
         self.LMUParam = None
@@ -44,9 +41,10 @@ class HyperModel(kt.HyperModel):
         self.SearchTheta = True
         return self
 
-    def SetUpClassification(self, classNumber: int):
+    def SetUpClassification(self, classNumber: int, isCategorical: bool):
         self.ModelType = ModelType.Classification
         self.ClassNumber = classNumber
+        self.IsCategorical = isCategorical
         self.SearchTheta = False
         return self
 
@@ -54,6 +52,7 @@ class HyperModel(kt.HyperModel):
         self.ModelName = "LMU"
         self.UseLRMU = False
         self.UseESN = False
+        self.UseRidge = False
         self.CreateModelBuilder()
         return self
 
@@ -61,6 +60,7 @@ class HyperModel(kt.HyperModel):
         self.ModelName = "LMU-ESN"
         self.UseLRMU = False
         self.UseESN = True
+        self.UseRidge = False
         self.UseLeaky = useLeaky
         self.CreateModelBuilder()
         return self
@@ -69,6 +69,7 @@ class HyperModel(kt.HyperModel):
         self.ModelName = "LRMU"
         self.UseLRMU = True
         self.UseESN = False
+        self.UseRidge = False
         self.CreateModelBuilder()
         return self
 
@@ -76,14 +77,26 @@ class HyperModel(kt.HyperModel):
         self.ModelName = "LRMU-ESN"
         self.UseLRMU = True
         self.UseESN = True
+        self.UseRidge = False
+        self.UseLeaky = useLeaky
+        self.CreateModelBuilder()
+        return self
+
+    def LRMU_ESN_RC(self, useLeaky=True):
+        self.ModelName = "LRMU-ESN-RC"
+        self.UseLRMU = True
+        self.UseESN = True
+        self.UseRidge = True
         self.UseLeaky = useLeaky
         self.CreateModelBuilder()
         return self
 
     def CreateModelBuilder(self):
-        self.Builder = ModelBuilder(self.ProblemName, self.ModelName, self.Seed)
+        self.Builder = ModelBuilder(self.ModelName, self.ProblemName, self.Seed)
 
     def selectCell(self, hp, hiddenUnit):
+        spectraRadius, leaky, inputScaler, biasScaler = None, None, None, None
+
         if not self.UseESN:
             hiddenCell = ks.layers.SimpleRNNCell(hiddenUnit, kernel_initializer=GlorotUniform(self.Seed))
         else:
@@ -93,7 +106,8 @@ class HyperModel(kt.HyperModel):
             biasScaler = hp.Float("ESN_BiasScaler", min_value=0.5, max_value=2, step=0.25)
             hiddenCell = ReservoirCell(hiddenUnit, spectral_radius=spectraRadius, leaky=leaky,
                                        input_scaling=inputScaler, useBias=True, bias_scaling=biasScaler)
-        return hiddenCell
+
+        return hiddenUnit, spectraRadius, leaky, inputScaler, biasScaler, hiddenCell
 
     def LMUSelectParam(self, hp):
         layerN = 1
@@ -147,35 +161,55 @@ class HyperModel(kt.HyperModel):
 
         if self.LMUForceParam:
             layerN, memoryDim, order, theta, hiddenUnit = self.LMUParam
-            hiddenCell = self.selectCell(hp, hiddenUnit)
+            (hiddenUnit, spectraRadius, leaky, inputScaler, biasScaler, hiddenCell) = self.selectCell(hp, hiddenUnit)
         else:
-            layerN, memoryDim, order, theta, hiddenCell = self.LMUSelectParam(hp)
+            layerN, memoryDim, order, theta, (
+            hiddenUnit, spectraRadius, leaky, inputScaler, biasScaler, hiddenCell) = self.LMUSelectParam(hp)
 
         if self.LMUForceConnection:
             hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias = self.LMUConnection
-            scaler = self.selectScaler(hp, hiddenToMemory, memoryToMemory, useBias)
+            encoderScaler = self.selectScaler(hp, hiddenToMemory, memoryToMemory, useBias)
         else:
-            hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias, scaler = self.selectConnection(hp)
+            hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias, encoderScaler = self.selectConnection(hp)
 
-        (hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler) = scaler
-        self.Builder.inputLayer(self.SequenceLength)
-        if self.UseLRMU:
-            self.Builder.LRMU(memoryDim, order, theta, hiddenCell,
-                              hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
-                              hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasScaler,
-                              layerN)
-        else:
-            self.Builder.LMU(memoryDim, order, theta, hiddenCell, False,
-                             hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
-                             layerN)
+        (hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasEncoderScaler) = encoderScaler
 
-        if self.ModelType == ModelType.Prediction:
-            return self.Builder.BuildPrediction(self.SeriesDim, self.Activation)
-        elif self.ModelType == ModelType.Classification:
-            return self.Builder.BuildClassification(self.ClassNumber)
+        if self.UseRidge:
+            regularization = hp.Float("regularization", min_value=0.5, max_value=1.5, step=0.25)
+            model = self.Builder.LRMU_ESN_RC(self.ModelType, self.SequenceLength, memoryDim, order, theta,
+                                             hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                                             hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler,
+                                             biasEncoderScaler,
+                                             hiddenUnit, spectraRadius, leaky, inputScaler, biasScaler, regularization)
+            if self.ModelType == ModelType.Prediction:
+                model.compile(optimizer='adam', loss="mse", metrics=["mae"])
+                return model.custom_compile([keras.metrics.MeanSquaredError(), keras.metrics.MeanAbsoluteError()], )
+            elif self.ModelType == ModelType.Classification:
+                if self.IsCategorical:
+                    model.compile(optimizer='adam', loss="categorical_crossentropy", metrics=["categorical_accuracy"])
+                    model.custom_compile([keras.losses.CategoricalCrossentropy(), keras.metrics.CategoricalAccuracy()])
+                else:
+                    model.compile(optimizer='adam', loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+                    model.custom_compile([keras.losses.SparseCategoricalCrossentropy(), keras.metrics.Accuracy()])
+                return model
+
+
         else:
-            print(f"\nModelType:{self.ModelType}\n")
-            return None
+            self.Builder.inputLayer(self.SequenceLength)
+            if self.UseLRMU:
+                self.Builder.LRMU(memoryDim, order, theta, hiddenCell,
+                                  hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                                  hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasEncoderScaler,
+                                  layerN)
+            else:
+                self.Builder.LMU(memoryDim, order, theta, hiddenCell, False,
+                                 hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                                 layerN)
+
+            if self.ModelType == ModelType.Prediction:
+                return self.Builder.BuildPrediction(self.SeriesDim, self.Activation)
+            elif self.ModelType == ModelType.Classification:
+                return self.Builder.BuildClassification(self.ClassNumber, self.IsCategorical)
 
     def build(self, hp):
         return self.constructHyperModel(hp)
