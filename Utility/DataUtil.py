@@ -91,6 +91,10 @@ class DataLabel(object):
         self.Label = self.Label[start:end]
         assert self.Data.shape[0] == self.Label.shape[0]
 
+    def FlattenSeriesData(self):
+        self.Data = self.Data.reshape(self.Data.shape[0], -1)
+        self.Label = self.Label.reshape(self.Label.shape[0], -1)
+
 
 
 class DataSet(object):
@@ -149,17 +153,13 @@ class DataSet(object):
 
     def FlattenSeriesData(self):
         if self.Data is not None:
-            self.Data.Data = self.Data.Data.reshape(self.Data.Data.shape[0], -1)
-            self.Data.Label = self.Data.Label.reshape(self.Data.Label.shape[0], -1)
+            self.Data.FlattenSeriesData()
         if self.Training is not None:
-            self.Training.Data = self.Training.Data.reshape(self.Training.Data.shape[0], -1)
-            self.Training.Label = self.Training.Label.reshape(self.Training.Label.shape[0], -1)
+            self.Training.FlattenSeriesData()
         if self.Validation is not None:
-            self.Validation.Data = self.Validation.Data.reshape(self.Validation.Data.shape[0], -1)
-            self.Validation.Label = self.Validation.Label.reshape(self.Validation.Label.shape[0], -1)
+            self.Validation.FlattenSeriesData()
         if self.Test is not None:
-            self.Test.Data = self.Test.Data.reshape(self.Test.Data.shape[0], -1)
-            self.Test.Label = self.Test.Label.reshape(self.Test.Label.shape[0], -1)
+            self.Test.FlattenSeriesData()
 
     @classmethod
     def init(cls, training, Validation, Test):

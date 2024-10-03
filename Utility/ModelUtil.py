@@ -6,6 +6,7 @@ from timeit import default_timer as timer
 from GlobalConfig import *
 from Utility.DataUtil import DataSet
 from Utility.PlotUtil import SaveTrainingData
+import time as t
 
 
 class TimingCallback(ks.callbacks.Callback):
@@ -71,8 +72,8 @@ def EvaluateModel(model, testName, dataSet: DataSet, batch_size=128, epochs=15, 
 
 def ModelEvaluation(model, testName,saveDir, dataset, batchSize, epochs, monitorStat):
     try:
-        history, result = EvaluateModel(model, testName, dataset, batchSize, epochs, monitorStat)
-        print(f"total training time: {sum(history.history['time'])}s", )
+        history, result = EvaluateModel(model, testName, dataset, batchSize, epochs, "val_loss")
+        print(f"total training time: {t.strftime('%H:%M:%S', t.gmtime(sum(history.history['time'])))}", )
         print(f"Test loss: {result[0]}")
         print(f"Test {monitorStat[-3:]}: {result[1]}")
     except Exception as e:
@@ -80,7 +81,7 @@ def ModelEvaluation(model, testName,saveDir, dataset, batchSize, epochs, monitor
         raise
 
     try:
-        SaveTrainingData(f"{saveDir}/{testName}", history, result)
+        SaveTrainingData(f"{saveDir}/{testName}", history.history, result)
     except Exception as e:
         print(f"\nexception during Data saving:\n {e}\n")
         raise
@@ -104,8 +105,8 @@ def TunerTraining(hyperModel,modelName, tuningName, problemName, dataSet, epochs
         max_trials=maxTrial,
         project_name=f"{problemName}",
         executions_per_trial=1,
-        max_retries_per_trial=3,
-        max_consecutive_failed_trials=8,
+        max_retries_per_trial=2,
+        max_consecutive_failed_trials=16,
 
         objective="val_loss",
         # Set a directory to store the intermediate results using Docker this isn't saved and that's intended

@@ -72,11 +72,11 @@ class ModelBuilder:
     def FF_Baseline(self):
         self.Feature = self.Input
 
-    def LRMU_ESN_RC(self, modelType, sequenceLength, memoryDim, order, theta,
-                    hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
-                    hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasEncoderScaler,
-                    hiddenUnit, spectraRadius, leaky, inputScaler, biasScaler,
-                    redoutRegulizer):
+    def LRMU_ESN_Ridge(self, modelType, sequenceLength, memoryDim, order, theta,
+                       hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
+                       hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasEncoderScaler,
+                       hiddenUnit, spectraRadius, leaky, inputScaler, biasScaler,
+                       redoutRegulizer):
         return LRMU_ESN_Ridge(modelType, sequenceLength, memoryDim, order, theta,
                               hiddenToMemory, memoryToMemory, inputToHiddenCell, useBias,
                               hiddenEncoderScaler, memoryEncoderScaler, InputEncoderScaler, biasEncoderScaler,
@@ -84,8 +84,7 @@ class ModelBuilder:
                               seed=self.Seed)
 
     def BuildClassification(self, classNuber, IsCategorical):
-        self.Outputs = ks.layers.Dense(classNuber, activation="softmax", kernel_initializer=GlorotUniform(self.Seed),
-                                       name="Output_Class")(self.Feature)
+        self.Outputs = ks.layers.Dense(classNuber, activation="softmax", kernel_initializer=GlorotUniform(self.Seed),name="Output_Class")(self.Feature)
         self.__ComposeModel()
         if IsCategorical:
             return self.__Compile("adam", "categorical_crossentropy", ["categorical_accuracy"])
@@ -93,9 +92,7 @@ class ModelBuilder:
             return self.__Compile("adam", "sparse_categorical_crossentropy", ["accuracy"])
 
     def BuildPrediction(self, featureDimension, activation):
-        self.Outputs = ks.layers.Dense(featureDimension, activation, kernel_initializer=GlorotUniform(self.Seed),
-                                       name="Output_Pred")(
-            self.Feature)
+        self.Outputs = ks.layers.Dense(featureDimension, activation, kernel_initializer=GlorotUniform(self.Seed),name="Output_Pred")(self.Feature)
         self.__ComposeModel()
         return self.__Compile("adam", "mse", ["mae"])
 

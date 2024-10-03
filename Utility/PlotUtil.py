@@ -1,6 +1,7 @@
 import pickle
 from matplotlib import pyplot as plt
 from Utility.FileUtil import *
+import time as t
 
 
 def PlotModelLossMSE(history, plotTitle='Problems', path=None, filename=None):
@@ -56,19 +57,21 @@ def ShowOrSavePlot(path=None, filename=None):
 
 def SaveTrainingDataByName(data_path, problem_name, test_name, history, result):
     dir = f"{data_path}/{problem_name}/{test_name}"
-    SaveTrainingData(dir,history, result)
+    SaveTrainingData(dir, history.history, result)
+
 
 def SaveTrainingData(path, history, result):
     os.makedirs(path, exist_ok=True)
     with open(f"{path}/history.bin", "wb") as outfile:
-        pickle.dump(history.history, outfile)
+        pickle.dump(history, outfile)
     with open(f"{path}/result.bin", "wb") as outfile:
         pickle.dump(result, outfile)
+
 
 def ReadTrainingDataByName(data_path, problem_name, test_name):
     dir = f"{data_path}/{problem_name}/{test_name}"
     # Writing to sample.json
-    history, result= ReadTrainingData(dir)
+    history, result = ReadTrainingData(dir)
     return history, result
 
 
@@ -173,8 +176,6 @@ def ReadAndPlotAll(data_path, plot_path, problemName, classification):
         ReadAndPlot(data_path, plot_path, problemName, dir.name, classification)
 
 
-
-
 def PrintAllDataByName(data_path, problem_name, classification):
     print(f"------------------------{problem_name}------------------------")
     PrintAllData(f"{data_path}/{problem_name}", classification)
@@ -188,15 +189,55 @@ def PrintAllData(path, classification):
         metric_in_history = "val_mae"
         metric_to_print = "mae"
 
-    print(f"|---------model_name----------|-Val_{metric_to_print}-|-t_{metric_to_print}-|")
+    print(f"|---------model_name----------|-Val_{metric_to_print}-|-t_{metric_to_print}-|total_time-|")
     PrintTestInFolder(path, metric_in_history)
+
 
 def PrintTestInFolder(path, metric_in_history):
     for test_name in getDirectSubDir(f"{path}"):
         history, result = ReadTrainingData(f"{path}/{test_name.name}")
-        print(f"{test_name.name:30}  & {history[metric_in_history][-1]:5.7f}  & {result[1]:5.7f} \\\\")
+        try:
+            print(
+                f"{test_name.name:30}  & {history[metric_in_history][-1]:5.5f} & {result[1]:5.5f} & {t.strftime('%H:%M:%S', t.gmtime(sum(history['time'])))}  \\\\")
+        except Exception as e:
+            # if len(history[metric_in_history]) == 0:
+            #     history[metric_in_history] = [history[metric_in_history]]
+            print(
+                f"{test_name.name:30}  & {history[metric_in_history]:5.5f} & {result[1]:5.5f} & {t.strftime('%H:%M:%S', t.gmtime(sum(history['time'])))} \\\\")
 
-def PrintAllDataAllSubProblem(data_path,problem_name, classification):
+
+def PrintAllDataAllSubProblem(data_path, problem_name, classification):
+    print(f"---------------------{problem_name}---------------------")
     for dir in getDirectSubDir(f"{data_path}/{problem_name}"):
         print(f"---------------------{dir.name}---------------------")
+        CleanData(f"{data_path}/{problem_name}/{dir.name}")
         PrintAllData(f"{data_path}/{problem_name}/{dir.name}", classification)
+
+
+def RenameDicKey(mydict, oldName, new_name):
+    mydict[new_name] = mydict.pop(oldName)
+
+
+def CleanData(path):
+    for test_name in getDirectSubDir(f"{path}"):
+        history, result = ReadTrainingData(f"{path}/{test_name.name}")
+        modified = False
+        if hasattr(history, "history"):
+            history = history.history
+            modified = True
+
+        if 'mean_squared_error' in history:
+            RenameDicKey(history, 'mean_squared_error', 'loss')
+            modified = True
+        if 'val_mean_squared_error' in history:
+            RenameDicKey(history, 'val_mean_squared_error', 'val_loss')
+            modified = True
+        if 'mean_absolute_error' in history:
+            RenameDicKey(history, 'mean_absolute_error', 'mae')
+            modified = True
+        if 'val_mean_absolute_error' in history:
+            RenameDicKey(history, 'val_mean_absolute_error', 'val_mae')
+            modified = True
+
+        if modified:
+            SaveTrainingData(f"{path}/{test_name.name}", history, result)
